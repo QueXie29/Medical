@@ -1,0 +1,72 @@
+{% extends "core/base.html" %}
+{% block title %}处方 — 管理{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .list-pagination { font-size: 0.875rem; }
+  .list-pagination a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="modern-card p-4">
+    <div class="mb-3">
+      <h5 class="mb-1 text-dark">处方</h5>
+      <p class="text-muted small mb-0">全院处方（只读）。{% if request.GET.mr %}当前筛选病历 ID = {{ request.GET.mr }} · <a href="{% url 'core:admin_prescription_list' %}">清除筛选</a>{% endif %}</p>
+    </div>
+
+    <hr class="text-secondary opacity-25 mb-4">
+
+    {% if prescriptions %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>患者</th>
+            <th>开方医生</th>
+            <th>状态</th>
+            <th>创建时间</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in prescriptions %}
+          <tr>
+            <td>#{{ p.pk }}</td>
+            <td>{{ p.medical_record.patient.real_name|default:p.medical_record.patient.username }}</td>
+            <td>{{ p.doctor.real_name|default:p.doctor.username }}</td>
+            <td>
+              {% if p.status == 'dispensed' %}
+              <span class="badge-modern badge-success">{{ p.get_status_display }}</span>
+              {% elif p.status == 'cancelled' %}
+              <span class="badge-modern badge-danger">{{ p.get_status_display }}</span>
+              {% elif p.status == 'signed' %}
+              <span class="badge-modern badge-warning">{{ p.get_status_display }}</span>
+              {% elif p.status == 'draft' %}
+              <span class="badge-modern badge-muted">{{ p.get_status_display }}</span>
+              {% else %}
+              <span class="badge-modern badge-info">{{ p.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ p.created_at|date:"Y-m-d H:i" }}</td>
+            <td><a href="{% url 'core:admin_prescription_detail' pk=p.pk %}">详情</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+    <div class="list-pagination pt-3 mt-3 border-top">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if request.GET.mr %}&mr={{ request.GET.mr }}{% endif %}">上一页</a>{% endif %}
+      <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if request.GET.mr %}&mr={{ request.GET.mr }}{% endif %}">下一页</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="hint mb-0">暂无处方。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

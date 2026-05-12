@@ -1,0 +1,104 @@
+{% extends "core/base.html" %}
+{% block title %}药品库存盘点 — 护士长工作台{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide hn-inv-wrap{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .main-inner.hn-inv-wrap { max-width: 1200px; }
+  .hn-inv-hero h1 { font-size: 1.45rem; font-weight: 800; margin: 0 0 0.35rem; color: #0f172a; }
+  .hn-inv-hero p { margin: 0 0 1.25rem; font-size: 0.88rem; color: #64748b; line-height: 1.55; }
+  .hn-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+  .hn-panel__head {
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid #f1f5f9;
+    background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .hn-panel__title { font-size: 1.05rem; font-weight: 700; margin: 0; color: #0f172a; }
+  .hn-table-wrap { overflow-x: auto; }
+  .hn-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .hn-table th, .hn-table td { border: 1px solid #e8ecf1; padding: 0.6rem 0.75rem; text-align: left; vertical-align: middle; }
+  .hn-table th { background: #f8fafc; color: #475569; font-weight: 600; }
+  .hn-table tbody tr { transition: background 0.12s; }
+  .hn-table tbody tr:hover { background: #fafbfc; }
+  .hn-row--danger { background: #fff1f2 !important; }
+  .hn-row--danger:hover { background: #ffe4e6 !important; }
+  .hn-stock-ok { font-weight: 700; color: #059669; }
+  .hn-stock-warn { font-weight: 800; color: #dc2626; font-size: 1.02rem; }
+  .hn-badge-warn {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 0.35rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    background: #fecaca;
+    color: #991b1b;
+  }
+  .hn-empty { padding: 2rem; text-align: center; color: #94a3b8; font-size: 0.9rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="hn-inv-hero">
+  <h1>药品库存盘点</h1>
+  <p>全院药品字典一览。库存 <strong>&lt; 20</strong> 的行已高亮，请及时安排补货或审批采购申请。
+    <a href="{% url 'core:admin_drug_list' %}">药品入库/补充</a> ·
+    <a href="{% url 'core:manufacturer_list' %}">生产厂家</a> ·
+    <a href="{% url 'core:headnurse_dashboard' %}">返回看板</a></p>
+</div>
+
+<div class="hn-panel">
+  <div class="hn-panel__head">
+    <h2 class="hn-panel__title">药品列表</h2>
+    <span class="hint" style="font-size:0.8rem;">共 {{ drugs|length }} 条</span>
+  </div>
+  {% if drugs %}
+  <div class="hn-table-wrap">
+    <table class="hn-table">
+      <thead>
+        <tr>
+          <th>药品名称</th>
+          <th>规格</th>
+          <th>单位</th>
+          <th>库存数量</th>
+          <th>单价</th>
+          <th>状态</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for drug in drugs %}
+        <tr class="{% if drug.stock_quantity < 20 %}hn-row--danger{% endif %}">
+          <td><strong>{{ drug.name }}</strong>{% if drug.generic_name %}<br><span class="hint" style="font-size:0.78rem;">{{ drug.generic_name }}</span>{% endif %}</td>
+          <td>{{ drug.specification }}</td>
+          <td>{{ drug.unit }}</td>
+          <td>
+            {% if drug.stock_quantity < 20 %}
+            <span class="hn-stock-warn">{{ drug.stock_quantity }}</span>
+            <span class="hn-badge-warn">⚠️ 库存不足</span>
+            {% else %}
+            <span class="hn-stock-ok">{{ drug.stock_quantity }}</span>
+            {% endif %}
+          </td>
+          <td>{{ drug.price }}</td>
+          <td>{% if drug.stock_quantity < 20 %}<span style="color:#b91c1c;font-weight:600;">预警</span>{% else %}<span class="hint">正常</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="hn-empty">暂无药品数据。</div>
+  {% endif %}
+</div>
+{% endblock %}

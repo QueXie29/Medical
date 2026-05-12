@@ -1,0 +1,19 @@
+{% extends "core/base.html" %}
+{% block title %}{% if object %}编辑药品{% else %}新建药品{% endif %} — 智慧医疗{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>{% if object %}编辑药品{% else %}新建药品{% endif %}</h1>
+  <form method="post" action="">
+    {% csrf_token %}
+    {% for field in form %}
+      <p>
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </p>
+    {% endfor %}
+    <button type="submit" class="btn">保存</button>
+  </form>
+  <p class="hint" style="margin-top:1rem;"><a href="{% url 'core:admin_drug_list' %}">返回列表</a></p>
+</div>
+{% endblock %}

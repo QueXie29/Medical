@@ -1,0 +1,105 @@
+{% extends "core/base.html" %}
+{% block title %}订单管理 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; }
+  .filter-bar label { font-size: 0.8rem; color: #64748b; display: block; margin-bottom: 0.2rem; }
+  .amt { font-weight: 700; color: #b45309; white-space: nowrap; }
+  .pagination { margin-top: 1.25rem; font-size: 0.875rem; }
+  .pagination a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="modern-card p-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+      <div>
+        <h5 class="mb-1 text-dark">订单管理</h5>
+        <p class="text-muted small mb-0">全院药品处方订单与收费记录查阅。</p>
+      </div>
+      <a href="{% url 'core:admin_financial_stats' %}" class="btn btn-sm btn-outline-secondary text-nowrap">财务统计</a>
+    </div>
+
+    <form method="get" action="" class="filter-bar mb-4" role="search">
+      <div>
+        <label for="f-type">订单类型</label>
+        <select name="order_type" id="f-type" class="form-select" style="min-width:10rem;">
+          <option value="">全部</option>
+          {% for val, label in order_type_choices %}
+          <option value="{{ val }}"{% if order_type == val %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="d-flex flex-wrap align-items-end gap-2">
+        <div>
+          <label for="f-from" class="d-block">开始日期</label>
+          <input type="date" class="form-control" name="start_date" id="f-from" value="{{ request.GET.start_date|default:'' }}" style="max-width:11rem;">
+        </div>
+        <span class="text-muted pb-1">至</span>
+        <div>
+          <label for="f-to" class="d-block">结束日期</label>
+          <input type="date" class="form-control" name="end_date" id="f-to" value="{{ request.GET.end_date|default:'' }}" style="max-width:11rem;">
+        </div>
+      </div>
+      <div class="d-flex flex-wrap align-items-end gap-2">
+        <button type="submit" class="btn btn-primary">筛选</button>
+        <a href="{% url 'core:admin_order_list' %}" class="btn btn-outline-secondary">重置</a>
+      </div>
+    </form>
+
+    <hr class="text-secondary opacity-25 mb-4">
+
+    {% if orders %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>患者</th>
+            <th>类型</th>
+            <th>金额</th>
+            <th>状态</th>
+            <th>描述</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for o in orders %}
+          <tr>
+            <td>{{ o.created_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ o.patient.real_name|default:o.patient.username }}（{{ o.patient.username }}）</td>
+            <td>{{ o.get_order_type_display }}</td>
+            <td class="amt">￥{{ o.amount|floatformat:2 }}</td>
+            <td>
+              {% if o.status == "PAID" %}
+                <span class="badge rounded-pill text-bg-success">已支付</span>
+              {% elif o.status == "REFUNDED" %}
+                <span class="badge rounded-pill text-bg-secondary">已退款</span>
+              {% else %}
+                <span class="badge rounded-pill text-bg-light text-dark border">{{ o.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ o.description|truncatechars:80 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}{% if order_type %}&amp;order_type={{ order_type|urlencode }}{% endif %}{% if start_date %}&amp;start_date={{ start_date }}{% endif %}{% if end_date %}&amp;end_date={{ end_date }}{% endif %}">上一页</a>
+      {% endif %}
+      <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}{% if order_type %}&amp;order_type={{ order_type|urlencode }}{% endif %}{% if start_date %}&amp;start_date={{ start_date }}{% endif %}{% if end_date %}&amp;end_date={{ end_date }}{% endif %}">下一页</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="hint mb-0">暂无订单记录。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

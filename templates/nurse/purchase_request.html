@@ -1,0 +1,163 @@
+{% extends "core/base.html" %}
+{% block title %}采购申请 — 护士工作台{% endblock %}
+{% block main_inner_class %}main-inner nr-pr-page{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .main-inner.nr-pr-page { max-width: 900px; margin-left: auto; margin-right: auto; }
+  .nr-pr-shell { padding-bottom: 1.5rem; }
+
+  .nr-pr-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+  .nr-pr-panel__head {
+    padding: 1.15rem 1.5rem;
+    border-bottom: 2px solid #f1f5f9;
+    background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+  }
+  .nr-pr-panel__head h2 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 0 0 0.4rem;
+    color: #0f172a;
+  }
+  .nr-pr-panel__head .hint { margin: 0; font-size: 0.88rem; color: #64748b; line-height: 1.55; }
+  .nr-pr-panel__body { padding: 1.35rem 1.5rem 1.5rem; max-width: 640px; margin: 0 auto; }
+
+  .nr-pr-field { margin-bottom: 1.25rem; }
+  .nr-pr-field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 0.45rem;
+  }
+  .nr-pr-input {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    font-size: 1.05rem;
+    line-height: 1.5;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    font-family: inherit;
+    box-sizing: border-box;
+    background: #fafafa;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .nr-pr-input--select { min-height: 3.1rem; cursor: pointer; }
+  .nr-pr-textarea {
+    min-height: 8rem;
+    resize: vertical;
+    line-height: 1.6;
+  }
+  .nr-pr-input:hover { border-color: #94a3b8; background: #fff; }
+  .nr-pr-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    background: #fff;
+  }
+
+  .nr-pr-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.85rem 1.5rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 0.35rem;
+    background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
+  }
+  .nr-pr-submit:hover { filter: brightness(1.06); }
+
+  .nr-pr-panel--history { margin-top: 1.25rem; }
+  .nr-pr-panel--history .nr-pr-panel__head h2 { font-size: 1.05rem; }
+  .nr-pr-table-wrap { overflow-x: auto; margin: 0 -0.25rem; }
+  .nr-pr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .nr-pr-table th, .nr-pr-table td {
+    border: 1px solid #e8ecf1;
+    padding: 0.6rem 0.7rem;
+    text-align: left;
+  }
+  .nr-pr-table th { background: #f8fafc; color: #475569; font-weight: 600; }
+  .nr-pr-table tbody tr { transition: background 0.12s; }
+  .nr-pr-table tbody tr:hover { background: #f8fafc; }
+
+  .errors { color: #b91c1c; font-size: 0.82rem; margin: 0.35rem 0 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="nr-pr-shell">
+  <section class="nr-pr-panel" aria-labelledby="nr-pr-form-title">
+    <div class="nr-pr-panel__head">
+      <h2 id="nr-pr-form-title">发起药品采购申请</h2>
+      <p class="hint">库存不足时在此提交申请，由护士长审批后按流程补货入库。</p>
+    </div>
+    <div class="nr-pr-panel__body">
+      <form method="post" action="">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="nr-pr-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<ul class="errors">{{ field.errors }}</ul>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="nr-pr-submit">提交申请</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="nr-pr-panel nr-pr-panel--history" aria-labelledby="nr-pr-hist-title">
+    <div class="nr-pr-panel__head">
+      <h2 id="nr-pr-hist-title">我的申请记录</h2>
+    </div>
+    <div class="nr-pr-panel__body" style="max-width:none;padding-top:0;">
+      {% if my_requests %}
+      <div class="nr-pr-table-wrap">
+        <table class="nr-pr-table">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>药品</th>
+              <th>数量</th>
+              <th>状态</th>
+              <th>审批人</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in my_requests %}
+            <tr>
+              <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
+              <td>{{ r.drug.name }}</td>
+              <td>{{ r.quantity }}</td>
+              <td>{{ r.get_status_display }}</td>
+              <td>{% if r.reviewer %}{{ r.reviewer.real_name|default:r.reviewer.username }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="hint" style="margin:0;">暂无记录。</p>
+      {% endif %}
+    </div>
+  </section>
+</div>
+{% endblock %}

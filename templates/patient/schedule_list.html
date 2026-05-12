@@ -1,0 +1,48 @@
+{% extends "base_patient.html" %}
+{% block title %}{{ department.name }} — 排班 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <p class="mb-2"><a href="{% url 'core:patient_departments' %}" class="text-decoration-none">← 返回科室信息</a></p>
+  <h1 class="h3 fw-bold mb-1">{{ department.name }}</h1>
+  <p class="text-muted mb-4">本科室可预约排班（含各出诊医生）。</p>
+  {% if schedules %}
+  <div class="table-responsive bg-white rounded-3 shadow-sm">
+    <table class="table table-hover mb-0 align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>出诊日期</th>
+          <th>班次</th>
+          <th>医生</th>
+          <th>挂号费</th>
+          <th>号源</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in schedules %}
+        <tr>
+          <td>{{ s.work_date }}</td>
+          <td>{{ s.get_shift_display }}</td>
+          <td>
+            {{ s.doctor.real_name|default:s.doctor.username }}
+            {% if s.doctor.department %}<br><span class="text-muted small">所属：{{ s.doctor.department.name }}</span>{% endif %}
+          </td>
+          <td class="fw-semibold text-warning">￥{{ s.price }}</td>
+          <td>余 {{ s.remaining_slots }} / {{ s.total_capacity }}</td>
+          <td>
+            {% if s.remaining_slots > 0 %}
+            <a class="btn btn-sm btn-primary" href="{% url 'core:patient_appointment_book' schedule_id=s.pk %}">预约</a>
+            {% else %}
+            <span class="text-muted small">已满</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-muted">该科室近期暂无开放排班。</p>
+  {% endif %}
+</div>
+{% endblock %}

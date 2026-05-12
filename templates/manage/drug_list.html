@@ -1,0 +1,65 @@
+{% extends "core/base.html" %}
+{% block title %}药品字典 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .actions a { margin-right: 0.5rem; }
+    .pagination { margin-top: 1rem; font-size: 0.875rem; }
+    .pagination a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>药品字典</h1>
+  <p><a href="{% url 'core:admin_drug_create' %}" class="btn" style="margin-top:0;">新建药品</a></p>
+  {% if drugs %}
+  <div class="table-responsive" style="margin-top:1rem;">
+    <table class="table table-hover table-modern align-middle">
+      <thead>
+        <tr>
+          <th>名称</th>
+          <th>规格</th>
+          <th>生产厂家</th>
+          <th>单位</th>
+          <th>库存</th>
+          <th>单价</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in drugs %}
+        <tr>
+          <td>{{ d.name }}{% if d.generic_name %}<br><span class="hint">{{ d.generic_name }}</span>{% endif %}</td>
+          <td>{{ d.specification }}</td>
+          <td>{% if d.manufacturer %}{{ d.manufacturer.name }}{% else %}<span class="hint">—</span>{% endif %}</td>
+          <td>{{ d.unit }}</td>
+          <td>{{ d.stock_quantity }}</td>
+          <td>{{ d.price }}</td>
+          <td class="actions">
+            <a href="{% url 'core:admin_drug_edit' pk=d.pk %}">编辑</a>
+            {% if user.role == 'admin' or user.is_superuser %}
+            <a href="{% url 'core:admin_drug_delete' pk=d.pk %}">删除</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}">上一页</a>
+    {% endif %}
+    <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}">下一页</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="hint">暂无药品记录。</p>
+  {% endif %}
+</div>
+{% endblock %}

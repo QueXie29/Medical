@@ -1,0 +1,103 @@
+{% extends "base_patient.html" %}
+{% block title %}{{ report.title|default:"预问诊报告" }} — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .patient-report-detail {
+    color: #4b5563;
+    line-height: 1.8;
+  }
+  .patient-report-back {
+    color: #64748b;
+    font-size: 0.92rem;
+  }
+  .patient-report-back:hover {
+    color: #0f766e;
+  }
+  .patient-report-hero {
+    margin-bottom: 1.25rem;
+  }
+  .patient-report-badge {
+    background: rgba(25, 135, 84, 0.10);
+    color: #198754;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.35;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.55rem;
+    word-break: break-word;
+  }
+  .patient-report-time {
+    color: #94a3b8;
+    font-size: 0.88rem;
+    margin: 0;
+  }
+  .patient-summary-card {
+    background: linear-gradient(135deg, rgba(240, 253, 250, 0.92), #ffffff);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    box-shadow: 0 0.25rem 1rem rgba(15, 23, 42, 0.06);
+  }
+  .patient-summary-title {
+    color: #334155;
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.5;
+    margin-bottom: 0.85rem;
+  }
+  .patient-summary-title i {
+    color: #0f766e;
+  }
+  .patient-summary-card p {
+    color: #4b5563;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    margin-bottom: 0;
+  }
+  .patient-report-meta {
+    color: #64748b;
+    line-height: 1.8;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container py-4 patient-report-detail">
+  <p class="mb-3"><a href="{% url 'core:patient_ai_report_list' %}" class="patient-report-back text-decoration-none">← 返回报告列表</a></p>
+  <div class="patient-report-hero">
+    <span class="patient-report-badge">
+      {{ report.structured_content.symptom_keyword|default:report.title|default:"预问诊报告" }}
+    </span>
+    <p class="patient-report-time">问诊完成于 {{ report.created_at|date:"Y-m-d H:i" }}</p>
+  </div>
+
+  <section class="patient-summary-card rounded-4 p-4">
+    <h6 class="patient-summary-title"><i class="fas fa-notes-medical me-2"></i>您的病情小结</h6>
+    <p>
+      {% if report.patient_summary %}
+        {{ report.patient_summary }}
+      {% elif report.structured_content.patient_summary %}
+        {{ report.structured_content.patient_summary }}
+      {% else %}
+        暂无患者端病情小结。建议您重新进行 AI 预问诊，或在就诊时向医生补充描述目前的不适情况。
+      {% endif %}
+    </p>
+  </section>
+
+  {% if report.recommended_department %}
+  <p class="patient-report-meta small mt-3 mb-0">
+    建议就诊科室：<span class="fw-semibold">{{ report.recommended_department.name }}</span>
+  </p>
+  {% endif %}
+
+  <p class="patient-report-meta small mt-3">
+    {% if report.appointments.exists %}
+      本报告已关联挂号，无法删除。
+    {% else %}
+      <a href="{% url 'core:patient_ai_report_delete' pk=report.pk %}">删除此报告</a>
+    {% endif %}
+  </p>
+  </div>
+{% endblock %}

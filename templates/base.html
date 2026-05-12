@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}智慧医疗{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    :root {
+      --fg: #1a1a1a;
+      --muted: #5c5c5c;
+      --border: #e2e5eb;
+      --accent: #0d6efd;
+      --accent-dim: #e7f1ff;
+      --bg: #f4f6f9;
+      --sidebar-bg: #1e293b;
+      --sidebar-fg: #e2e8f0;
+      --sidebar-hover: #334155;
+      --header-h: 56px;
+      --sidebar-w: 260px;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { font-size: 16px; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 200;
+      height: var(--header-h);
+      padding: 0 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: #fff;
+      border-bottom: 1px solid var(--border);
+      flex-wrap: nowrap;
+    }
+    .app-header__left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    .app-header__spacer {
+      flex: 1;
+      min-width: 0;
+    }
+    .app-header__brand {
+      font-weight: 700;
+      font-size: 1.05rem;
+      color: var(--fg);
+    }
+    .app-header__brand:hover { text-decoration: none; color: var(--accent); }
+    .app-header__actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+    .user-menu { position: relative; }
+    .user-menu__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.4rem 0.75rem;
+      font-size: 0.875rem;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--fg);
+      cursor: pointer;
+      max-width: 220px;
+    }
+    .user-menu__btn:hover { background: #f8fafc; }
+    .user-menu__panel {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      min-width: 200px;
+      padding: 0.35rem 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.12);
+      z-index: 400;
+    }
+    .user-menu.is-open .user-menu__panel { display: block; }
+    .user-menu__panel a {
+      display: block;
+      padding: 0.5rem 1rem;
+      color: var(--fg);
+      font-size: 0.875rem;
+      text-decoration: none;
+    }
+    .user-menu__panel a:hover { background: var(--accent-dim); text-decoration: none; }
+    .user-menu__panel form { margin: 0; padding: 0; }
+    .user-menu__panel form button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-family: inherit;
+      border: none;
+      background: none;
+      color: var(--fg);
+      cursor: pointer;
+    }
+    .user-menu__panel form button:hover { background: #fef2f2; color: #b91c1c; }
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--accent);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn-ghost:hover { background: var(--accent-dim); }
+
+    .layout {
+      display: flex;
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background-color: #1e293b;
+      color: #e2e8f0;
+      padding: 0.75rem 0 1rem;
+      transition: transform 0.2s ease;
+    }
+    .sidebar-heading {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      padding: 1rem 1.5rem 0.5rem;
+      font-weight: 600;
+    }
+    .sidebar .sidebar-nav > .nav {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    .sidebar .nav-link {
+      color: #cbd5e1;
+      padding: 0.8rem 1.5rem;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s;
+      border-radius: 0 20px 20px 0;
+      margin-right: 1rem;
+      text-decoration: none;
+      border-left: none;
+    }
+    .sidebar .nav-link:hover {
+      background-color: #334155;
+      color: #ffffff;
+      text-decoration: none;
+    }
+    .sidebar .nav-link.active {
+      background-color: #0d9488 !important;
+      color: #ffffff !important;
+      box-shadow: 0 4px 6px rgba(13, 148, 136, 0.2);
+    }
+    .sidebar .nav-link[data-bs-toggle="collapse"] {
+      justify-content: space-between;
+    }
+    .sidebar .nav-link .menu-arrow {
+      transition: transform 0.3s ease;
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+    .sidebar .nav-link[aria-expanded="true"] .menu-arrow {
+      transform: rotate(180deg);
+      color: #ffffff;
+    }
+    .sidebar .collapse .nav {
+      background-color: #0f172a;
+      padding-top: 0.5rem;
+      padding-bottom: 0.5rem;
+      border-radius: 0 0 10px 0;
+      list-style: none;
+      margin: 0;
+    }
+    .sidebar .collapse .nav-link {
+      padding: 0.5rem 1.5rem 0.5rem 3rem;
+      font-size: 0.9rem;
+      box-shadow: none;
+    }
+    .sidebar .collapse .nav-link.active {
+      background-color: #115e59 !important;
+      color: #fff !important;
+    }
+
+    .main-wrap {
+      flex: 1;
+      min-width: 0;
+      padding: 1.25rem 1.5rem 2rem;
+    }
+    .main-inner {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .main-inner--wide { max-width: 1200px; }
+
+    .messages {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 1rem;
+    }
+    .messages li {
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      background: var(--accent-dim);
+      color: #084298;
+      font-size: 0.9rem;
+    }
+
+    .sidebar-toggle {
+      display: none;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar-toggle { display: inline-flex; }
+      .sidebar {
+        position: fixed;
+        top: var(--header-h);
+        left: 0;
+        bottom: 0;
+        z-index: 150;
+        transform: translateX(-100%);
+        box-shadow: 4px 0 24px rgba(0,0,0,.12);
+      }
+      .sidebar.is-open { transform: translateX(0); }
+      .layout.sidebar-open::after {
+        content: "";
+        position: fixed;
+        inset: var(--header-h) 0 0 0;
+        background: rgba(0,0,0,.35);
+        z-index: 140;
+      }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-header__left">
+      <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-expanded="false" aria-controls="app-sidebar" hidden>☰</button>
+      <a class="app-header__brand" href="{% if user.is_authenticated %}{% if user.role == 'admin' or user.is_superuser %}{% url 'core:admin_dashboard' %}{% elif user.role == 'patient' %}{% url 'core:index' %}{% elif user.role == 'doctor' %}{% url 'core:doctor_dashboard' %}{% elif user.role == 'nurse' %}{% url 'core:nurse_triage_list' %}{% elif user.role == 'head_nurse' %}{% url 'core:headnurse_dashboard' %}{% else %}{% url 'core:index' %}{% endif %}{% else %}{% url 'core:index' %}{% endif %}">智慧医疗</a>
+    </div>
+    <div class="app-header__spacer" aria-hidden="true"></div>
+    <div class="app-header__actions">
+      {% if user.is_authenticated %}
+        <div class="user-menu" id="user-menu">
+          <button type="button" class="user-menu__btn" id="user-menu-btn" aria-expanded="false" aria-haspopup="true" aria-controls="user-menu-panel">
+            <span class="user-menu__name">{{ user.real_name|default:user.username }}</span>
+            <span class="hint" style="font-size:0.75rem;font-weight:500;">▼</span>
+          </button>
+          <div class="user-menu__panel" id="user-menu-panel" role="menu">
+            {% if user.role == 'patient' %}
+            <a href="{% url 'core:patient_personal_center' %}" role="menuitem">我的信息</a>
+            {% endif %}
+            <a href="{% url 'core:change_initial_password' %}" role="menuitem">修改密码</a>
+            <form method="post" action="{% url 'core:logout' %}">
+              {% csrf_token %}
+              <button type="submit" role="menuitem">退出登录</button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <a href="{% url 'core:login' %}">登录</a>
+        <a href="{% url 'core:register' %}">注册</a>
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="layout" id="app-layout">
+    {% if user.is_authenticated %}
+    <aside class="sidebar" id="app-sidebar" aria-label="主导航">
+      <div class="sidebar-heading">{% if user.role == 'admin' or user.is_superuser %}管理后台{% else %}功能菜单{% endif %}</div>
+      <nav class="sidebar-nav">
+        {% with u=request.resolver_match.url_name %}
+        <ul class="nav flex-column">
+          {% if user.role == 'admin' or user.is_superuser %}
+            <li class="nav-item">
+              <a class="nav-link{% if u == 'admin_dashboard' or u == 'admin_financial_stats' or u == 'admin_order_list' %} active{% endif %}{% if u != 'admin_dashboard' and u != 'admin_financial_stats' and u != 'admin_order_list' %} collapsed{% endif %}" data-bs-toggle="collapse" href="#menuDataDash" role="button" aria-expanded="{% if u == 'admin_dashboard' or u == 'admin_financial_stats' or u == 'admin_order_list' %}true{% else %}false{% endif %}">
+                <i class="fas fa-chart-line me-2" aria-hidden="true"></i><span>数据大盘</span>
+                <i class="fas fa-chevron-down menu-arrow" aria-hidden="true"></i>
+              </a>
+              <div class="collapse{% if u == 'admin_dashboard' or u == 'admin_financial_stats' or u == 'admin_order_list' %} show{% endif %}" id="menuDataDash">
+                <ul class="nav flex-column">
+                  <li class="nav-item">
+                    <a class="nav-link{% if u == 'admin_dashboard' %} active{% endif %}" href="{% url 'core:admin_dashboard' %}"><i class="fas fa-tachometer-alt me-2" aria-hidden="true"></i>管理仪表盘</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link{% if u == 'admin_financial_stats' %} active{% endif %}" href="{% url 'core:admin_financial_stats' %}"><i class="fas fa-chart-line me-2" aria-hidden="true"></i>财务统计</a>
+                  </li>
+                  <li class="nav-item">
+                    <a class="nav-link{% if u == 'admin_order_list' %} active{% endif %}" href="{% url 'core:admin_order_list' %}"><i class="fas fa-money-bill-wave me-2" aria-hidden="true"></i>订单管理</a>
+                  </li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link{% if u == 'admin_hospital_setting' or u == 'admin_department_list' or u == 'admin_department_create' or u == 'admin_department_edit' or u == 'admin_department_delete' or u == 'admin_operation_log_list' %} active{% endif %}{% if u != 'admin_hospital_setting' and u != 'admin_department_list' and u != 'admin_department_create' and u != 'admin_department_edit' and u != 'admin_department_delete' and u != 'admin_operation_log_list' %} collapsed{% endif %}" data-bs-toggle="collapse" href="#menuConfig" role="button" aria-expanded="{% if u == 'admin_hospital_setting' or u == 'admin_department_list' or u == 'admin_department_create' or u == 'admin_department_edit' or u == 'admin_department_delete' or u == 'admin_operation_log_list' %}true{% else %}false{% endif %}">
+                <span>机构配置</span>
+                <i class="fas fa-chevron-down menu-arrow" aria-hidden="true"></i>
+              </a>
+              <div class="collapse{% if u == 'admin_hospital_setting' or u == 'admin_department_list' or u == 'admin_department_create' or u == 'admin_department_edit' or u == 'admin_department_delete' or u == 'admin_operation_log_list' %} show{% endif %}" id="menuConfig">
+                <ul class="nav flex-column">
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_hospital_setting' %} active{% endif %}" href="{% url 'core:admin_hospital_setting' %}">门户配置</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_department_list' or u == 'admin_department_create' or u == 'admin_department_edit' or u == 'admin_department_delete' %} active{% endif %}" href="{% url 'core:admin_department_list' %}">科室管理</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_operation_log_list' %} active{% endif %}" href="{% url 'core:admin_operation_log_list' %}">系统操作日志</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link{% if u == 'admin_patient_list' or u == 'admin_patient_detail' or u == 'admin_patient_account_list' or u == 'admin_staff_list' or u == 'admin_staff_edit' or u == 'admin_staff_delete' or u == 'admin_create_employee' %} active{% endif %}{% if u != 'admin_patient_list' and u != 'admin_patient_detail' and u != 'admin_patient_account_list' and u != 'admin_staff_list' and u != 'admin_staff_edit' and u != 'admin_staff_delete' and u != 'admin_create_employee' %} collapsed{% endif %}" data-bs-toggle="collapse" href="#menuPersonnel" role="button" aria-expanded="{% if u == 'admin_patient_list' or u == 'admin_patient_detail' or u == 'admin_patient_account_list' or u == 'admin_staff_list' or u == 'admin_staff_edit' or u == 'admin_staff_delete' or u == 'admin_create_employee' %}true{% else %}false{% endif %}">
+                <span>人员与账号</span>
+                <i class="fas fa-chevron-down menu-arrow" aria-hidden="true"></i>
+              </a>
+              <div class="collapse{% if u == 'admin_patient_list' or u == 'admin_patient_detail' or u == 'admin_patient_account_list' or u == 'admin_staff_list' or u == 'admin_staff_edit' or u == 'admin_staff_delete' or u == 'admin_create_employee' %} show{% endif %}" id="menuPersonnel">
+                <ul class="nav flex-column">
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_patient_list' or u == 'admin_patient_detail' %} active{% endif %}" href="{% url 'core:admin_patient_list' %}">患者档案管理</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_patient_account_list' %} active{% endif %}" href="{% url 'core:admin_patient_account_list' %}">患者账号管理</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_staff_list' or u == 'admin_staff_edit' or u == 'admin_staff_delete' %} active{% endif %}" href="{% url 'core:admin_staff_list' %}">员工管理</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_create_employee' %} active{% endif %}" href="{% url 'core:admin_create_employee' %}">员工开户</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link{% if u == 'admin_schedule_list' or u == 'admin_schedule_edit' or u == 'admin_schedule_delete' or u == 'admin_schedule_publish' or u == 'admin_appointment_list' or u == 'admin_appointment_detail' or u == 'admin_ai_report_list' or u == 'admin_ai_report_detail' or u == 'admin_medical_record_list' or u == 'admin_medical_record_detail' or u == 'admin_prescription_list' or u == 'admin_prescription_detail' %} active{% endif %}{% if u != 'admin_schedule_list' and u != 'admin_schedule_edit' and u != 'admin_schedule_delete' and u != 'admin_schedule_publish' and u != 'admin_appointment_list' and u != 'admin_appointment_detail' and u != 'admin_ai_report_list' and u != 'admin_ai_report_detail' and u != 'admin_medical_record_list' and u != 'admin_medical_record_detail' and u != 'admin_prescription_list' and u != 'admin_prescription_detail' %} collapsed{% endif %}" data-bs-toggle="collapse" href="#menuClinic" role="button" aria-expanded="{% if u == 'admin_schedule_list' or u == 'admin_schedule_edit' or u == 'admin_schedule_delete' or u == 'admin_schedule_publish' or u == 'admin_appointment_list' or u == 'admin_appointment_detail' or u == 'admin_ai_report_list' or u == 'admin_ai_report_detail' or u == 'admin_medical_record_list' or u == 'admin_medical_record_detail' or u == 'admin_prescription_list' or u == 'admin_prescription_detail' %}true{% else %}false{% endif %}">
+                <span>门诊与病历</span>
+                <i class="fas fa-chevron-down menu-arrow" aria-hidden="true"></i>
+              </a>
+              <div class="collapse{% if u == 'admin_schedule_list' or u == 'admin_schedule_edit' or u == 'admin_schedule_delete' or u == 'admin_schedule_publish' or u == 'admin_appointment_list' or u == 'admin_appointment_detail' or u == 'admin_ai_report_list' or u == 'admin_ai_report_detail' or u == 'admin_medical_record_list' or u == 'admin_medical_record_detail' or u == 'admin_prescription_list' or u == 'admin_prescription_detail' %} show{% endif %}" id="menuClinic">
+                <ul class="nav flex-column">
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_schedule_publish' %} active{% endif %}" href="{% url 'core:admin_schedule_publish' %}">发布排班</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_schedule_list' or u == 'admin_schedule_edit' or u == 'admin_schedule_delete' %} active{% endif %}" href="{% url 'core:admin_schedule_list' %}">排班列表</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_appointment_list' or u == 'admin_appointment_detail' %} active{% endif %}" href="{% url 'core:admin_appointment_list' %}">预约挂号</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_ai_report_list' or u == 'admin_ai_report_detail' %} active{% endif %}" href="{% url 'core:admin_ai_report_list' %}">预问诊报告</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_medical_record_list' or u == 'admin_medical_record_detail' %} active{% endif %}" href="{% url 'core:admin_medical_record_list' %}">电子病历</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_prescription_list' or u == 'admin_prescription_detail' %} active{% endif %}" href="{% url 'core:admin_prescription_list' %}">处方</a></li>
+                </ul>
+              </div>
+            </li>
+
+            <li class="nav-item">
+              <a class="nav-link{% if u == 'admin_drug_list' or u == 'admin_drug_create' or u == 'admin_drug_edit' or u == 'admin_drug_delete' or u == 'manufacturer_list' or u == 'manufacturer_create' or u == 'manufacturer_edit' or u == 'manufacturer_delete' or u == 'admin_purchase_request_list' or u == 'admin_purchase_request_detail' %} active{% endif %}{% if u != 'admin_drug_list' and u != 'admin_drug_create' and u != 'admin_drug_edit' and u != 'admin_drug_delete' and u != 'manufacturer_list' and u != 'manufacturer_create' and u != 'manufacturer_edit' and u != 'manufacturer_delete' and u != 'admin_purchase_request_list' and u != 'admin_purchase_request_detail' %} collapsed{% endif %}" data-bs-toggle="collapse" href="#menuPharmacy" role="button" aria-expanded="{% if u == 'admin_drug_list' or u == 'admin_drug_create' or u == 'admin_drug_edit' or u == 'admin_drug_delete' or u == 'manufacturer_list' or u == 'manufacturer_create' or u == 'manufacturer_edit' or u == 'manufacturer_delete' or u == 'admin_purchase_request_list' or u == 'admin_purchase_request_detail' %}true{% else %}false{% endif %}">
+                <span>药事与采购</span>
+                <i class="fas fa-chevron-down menu-arrow" aria-hidden="true"></i>
+              </a>
+              <div class="collapse{% if u == 'admin_drug_list' or u == 'admin_drug_create' or u == 'admin_drug_edit' or u == 'admin_drug_delete' or u == 'manufacturer_list' or u == 'manufacturer_create' or u == 'manufacturer_edit' or u == 'manufacturer_delete' or u == 'admin_purchase_request_list' or u == 'admin_purchase_request_detail' %} show{% endif %}" id="menuPharmacy">
+                <ul class="nav flex-column">
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_drug_list' or u == 'admin_drug_create' or u == 'admin_drug_edit' or u == 'admin_drug_delete' %} active{% endif %}" href="{% url 'core:admin_drug_list' %}">药品管理</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'manufacturer_list' or u == 'manufacturer_create' or u == 'manufacturer_edit' or u == 'manufacturer_delete' %} active{% endif %}" href="{% url 'core:manufacturer_list' %}">生产厂家管理</a></li>
+                  <li class="nav-item"><a class="nav-link{% if u == 'admin_purchase_request_list' or u == 'admin_purchase_request_detail' %} active{% endif %}" href="{% url 'core:admin_purchase_request_list' %}">采购申请</a></li>
+                </ul>
+              </div>
+            </li>
+
+          {% else %}
+            {% if user.role != 'patient' and user.role != 'doctor' and user.role != 'nurse' and user.role != 'head_nurse' %}
+              <li class="nav-item"><a class="nav-link{% if u == 'index' %} active{% endif %}" href="{% url 'core:index' %}">首页</a></li>
+            {% endif %}
+            {% if user.role == 'patient' %}
+              <li class="nav-item"><a class="nav-link{% if u == 'index' %} active{% endif %}" href="{% url 'core:index' %}">患者门户</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'core:patient_departments' %}">科室与挂号</a></li>
+              <li class="nav-item"><a class="nav-link" href="{% url 'core:patient_personal_center' %}">我的信息</a></li>
+            {% elif user.role == 'doctor' %}
+              <li class="nav-item">
+                <a class="nav-link{% if u == 'doctor_dashboard' or u == 'doctor_queue' or u == 'doctor_appointment_consult' %} active{% endif %}{% if u != 'doctor_dashboard' and u != 'doctor_queue' and u != 'doctor_appointment_consult' %} collapsed{% endif %}" data-bs-toggle="collapse" href="#menuDoctor" role="button" aria-expanded="{% if u == 'doctor_dashboard' or u == 'doctor_queue' or u == 'doctor_appointment_consult' %}true{% else %}false{% endif %}">
+                  <span>医生工作站</span>
+                  <i class="fas fa-chevron-down menu-arrow" aria-hidden="true"></i>
+                </a>
+                <div class="collapse{% if u == 'doctor_dashboard' or u == 'doctor_queue' or u == 'doctor_appointment_consult' %} show{% endif %}" id="menuDoctor">
+                  <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link{% if u == 'doctor_dashboard' %} active{% endif %}" href="{% url 'core:doctor_dashboard' %}">我的看板</a></li>
+                    <li class="nav-item"><a class="nav-link{% if u == 'doctor_queue' or u == 'doctor_appointment_consult' %} active{% endif %}" href="{% url 'core:doctor_queue' %}">患者队列</a></li>
+                  </ul>
+                </div>
+              </li>
+            {% elif user.role == 'nurse' %}
+              <li class="nav-item">
+                <a class="nav-link{% if u == 'nurse_triage_list' or u == 'nurse_vital_sign_create' or u == 'nurse_prescriptions' or u == 'nurse_prescription_dispense' or u == 'nurse_purchase_request' %} active{% endif %}{% if u != 'nurse_triage_list' and u != 'nurse_vital_sign_create' and u != 'nurse_prescriptions' and u != 'nurse_prescription_dispense' and u != 'nurse_purchase_request' %} collapsed{% endif %}" data-bs-toggle="collapse" href="#menuNurse" role="button" aria-expanded="{% if u == 'nurse_triage_list' or u == 'nurse_vital_sign_create' or u == 'nurse_prescriptions' or u == 'nurse_prescription_dispense' or u == 'nurse_purchase_request' %}true{% else %}false{% endif %}">
+                  <span>护士工作站</span>
+                  <i class="fas fa-chevron-down menu-arrow" aria-hidden="true"></i>
+                </a>
+                <div class="collapse{% if u == 'nurse_triage_list' or u == 'nurse_vital_sign_create' or u == 'nurse_prescriptions' or u == 'nurse_prescription_dispense' or u == 'nurse_purchase_request' %} show{% endif %}" id="menuNurse">
+                  <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link{% if u == 'nurse_triage_list' or u == 'nurse_vital_sign_create' %} active{% endif %}" href="{% url 'core:nurse_triage_list' %}">门诊分诊台</a></li>
+                    <li class="nav-item"><a class="nav-link{% if u == 'nurse_prescriptions' or u == 'nurse_prescription_dispense' %} active{% endif %}" href="{% url 'core:nurse_prescriptions' %}">处方执行</a></li>
+                    <li class="nav-item"><a class="nav-link{% if u == 'nurse_purchase_request' %} active{% endif %}" href="{% url 'core:nurse_purchase_request' %}">采购申请</a></li>
+                  </ul>
+                </div>
+              </li>
+            {% elif user.role == 'head_nurse' %}
+              <li class="nav-item">
+                <a class="nav-link{% if u == 'headnurse_dashboard' or u == 'headnurse_drug_inventory' or u == 'admin_drug_list' or u == 'admin_drug_create' or u == 'admin_drug_edit' or u == 'admin_drug_delete' or u == 'manufacturer_list' or u == 'manufacturer_create' or u == 'manufacturer_edit' or u == 'manufacturer_delete' or u == 'headnurse_purchase' or u == 'headnurse_purchase_decide' %} active{% endif %}{% if u != 'headnurse_dashboard' and u != 'headnurse_drug_inventory' and u != 'admin_drug_list' and u != 'admin_drug_create' and u != 'admin_drug_edit' and u != 'admin_drug_delete' and u != 'manufacturer_list' and u != 'manufacturer_create' and u != 'manufacturer_edit' and u != 'manufacturer_delete' and u != 'headnurse_purchase' and u != 'headnurse_purchase_decide' %} collapsed{% endif %}" data-bs-toggle="collapse" href="#menuHeadNurse" role="button" aria-expanded="{% if u == 'headnurse_dashboard' or u == 'headnurse_drug_inventory' or u == 'admin_drug_list' or u == 'admin_drug_create' or u == 'admin_drug_edit' or u == 'admin_drug_delete' or u == 'manufacturer_list' or u == 'manufacturer_create' or u == 'manufacturer_edit' or u == 'manufacturer_delete' or u == 'headnurse_purchase' or u == 'headnurse_purchase_decide' %}true{% else %}false{% endif %}">
+                  <span>护士长工作台</span>
+                  <i class="fas fa-chevron-down menu-arrow" aria-hidden="true"></i>
+                </a>
+                <div class="collapse{% if u == 'headnurse_dashboard' or u == 'headnurse_drug_inventory' or u == 'admin_drug_list' or u == 'admin_drug_create' or u == 'admin_drug_edit' or u == 'admin_drug_delete' or u == 'manufacturer_list' or u == 'manufacturer_create' or u == 'manufacturer_edit' or u == 'manufacturer_delete' or u == 'headnurse_purchase' or u == 'headnurse_purchase_decide' %} show{% endif %}" id="menuHeadNurse">
+                  <ul class="nav flex-column">
+                    <li class="nav-item"><a class="nav-link{% if u == 'headnurse_dashboard' %} active{% endif %}" href="{% url 'core:headnurse_dashboard' %}">管理看板</a></li>
+                    <li class="nav-item"><a class="nav-link{% if u == 'headnurse_drug_inventory' %} active{% endif %}" href="{% url 'core:headnurse_drug_inventory' %}">药品库存盘点</a></li>
+                    <li class="nav-item"><a class="nav-link{% if u == 'admin_drug_list' or u == 'admin_drug_create' or u == 'admin_drug_edit' or u == 'admin_drug_delete' %} active{% endif %}" href="{% url 'core:admin_drug_list' %}">药品入库/补充</a></li>
+                    <li class="nav-item"><a class="nav-link{% if u == 'manufacturer_list' or u == 'manufacturer_create' or u == 'manufacturer_edit' or u == 'manufacturer_delete' %} active{% endif %}" href="{% url 'core:manufacturer_list' %}">生产厂家管理</a></li>
+                    <li class="nav-item"><a class="nav-link{% if u == 'headnurse_purchase' or u == 'headnurse_purchase_decide' %} active{% endif %}" href="{% url 'core:headnurse_purchase' %}">采购审批中心</a></li>
+                  </ul>
+                </div>
+              </li>
+            {% endif %}
+          {% endif %}
+        </ul>
+        {% endwith %}
+      </nav>
+    </aside>
+    {% endif %}
+
+    <div class="main-wrap">
+      <div class="{% block main_inner_class %}main-inner{% endblock %}">
+        {% if messages %}
+          <ul class="messages">
+            {% for message in messages %}
+              <li>{{ message }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+  <script>
+    (function () {
+      var menu = document.getElementById("user-menu");
+      var menuBtn = document.getElementById("user-menu-btn");
+      var menuPanel = document.getElementById("user-menu-panel");
+      if (menu && menuBtn && menuPanel) {
+        menuBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var open = !menu.classList.contains("is-open");
+          menu.classList.toggle("is-open", open);
+          menuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        document.addEventListener("click", function () {
+          menu.classList.remove("is-open");
+          menuBtn.setAttribute("aria-expanded", "false");
+        });
+        menu.addEventListener("click", function (e) { e.stopPropagation(); });
+      }
+      var toggle = document.getElementById("sidebar-toggle");
+      var sidebar = document.getElementById("app-sidebar");
+      var layout = document.getElementById("app-layout");
+      if (!toggle || !sidebar || !layout) return;
+
+      function mq() { return window.matchMedia("(max-width: 900px)").matches; }
+      function sync() {
+        var mobile = mq();
+        toggle.hidden = !mobile;
+        if (!mobile) {
+          sidebar.classList.remove("is-open");
+          layout.classList.remove("sidebar-open");
+          toggle.setAttribute("aria-expanded", "false");
+        }
+      }
+      sync();
+      window.addEventListener("resize", sync);
+
+      toggle.addEventListener("click", function () {
+        var open = sidebar.classList.toggle("is-open");
+        layout.classList.toggle("sidebar-open", open);
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+
+      layout.addEventListener("click", function (e) {
+        if (mq() && e.target === layout && sidebar.classList.contains("is-open")) {
+          sidebar.classList.remove("is-open");
+          layout.classList.remove("sidebar-open");
+          toggle.setAttribute("aria-expanded", "false");
+        }
+      });
+    })();
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

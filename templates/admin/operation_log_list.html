@@ -1,0 +1,76 @@
+{% extends "core/base.html" %}
+{% block title %}系统操作日志 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .pagination { margin-top: 1.25rem; font-size: 0.875rem; }
+  .pagination a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="modern-card p-4">
+    <div class="mb-3">
+      <h5 class="mb-1 text-dark">系统操作日志</h5>
+      <p class="text-muted small mb-0">记录管理员关键操作与全站登录行为，按时间倒序；每页 20 条。</p>
+    </div>
+    <hr class="text-secondary opacity-25 mb-4">
+    {% if logs %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle">
+        <thead>
+          <tr>
+            <th>时间</th>
+            <th>动作</th>
+            <th>模块</th>
+            <th>操作人</th>
+            <th>IP</th>
+            <th>变更明细 / 操作参数</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in logs %}
+          <tr>
+            <td class="text-secondary font-monospace small">{{ row.created_at|date:"Y-m-d H:i:s" }}</td>
+            <td>
+              {% if row.action_type == "CREATE" %}
+                <span class="badge bg-success">新增</span>
+              {% elif row.action_type == "UPDATE" %}
+                <span class="badge bg-primary">修改</span>
+              {% elif row.action_type == "DELETE" %}
+                <span class="badge bg-danger">删除</span>
+              {% elif row.action_type == "LOGIN" %}
+                <span class="badge bg-secondary">登录</span>
+              {% else %}
+                <span class="badge bg-dark">{{ row.action_type }}</span>
+              {% endif %}
+            </td>
+            <td>{{ row.module }}</td>
+            <td>{% if row.user %}{{ row.user.real_name|default:row.user.username }}<span class="text-secondary font-monospace small">（{{ row.user.username }}）</span>{% else %}<span class="hint">—</span>{% endif %}</td>
+            <td class="text-secondary font-monospace small">{% if row.ip_address %}{{ row.ip_address }}{% else %}—{% endif %}</td>
+            <td>
+              <code class="small text-muted bg-light p-1 rounded d-inline-block font-monospace" style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle;" title="{{ row.description }}">{{ row.description }}</code>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pagination">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}">上一页</a>
+      {% endif %}
+      <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">下一页</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="hint mb-0">暂无操作日志。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

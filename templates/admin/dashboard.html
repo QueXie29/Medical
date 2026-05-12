@@ -1,0 +1,207 @@
+{% extends "core/base.html" %}
+{% block title %}管理仪表盘 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .adm-dash-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.35rem; color: #0f172a; letter-spacing: -0.02em; }
+  .adm-dash-hero p { margin: 0; font-size: 0.9rem; color: #64748b; }
+  .stat-card {
+    border: none;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #0d9488;
+  }
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(13, 148, 136, 0.1);
+  }
+  .stat-card--staff::before { background: #6366f1; }
+  .stat-card--staff .stat-icon-box { background: #eef2ff; color: #6366f1; }
+  .stat-card--month::before { background: #d97706; }
+  .stat-card--month .stat-icon-box { background: #fffbeb; color: #d97706; }
+  .stat-icon-box {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #f0fdfa;
+    color: #0d9488;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    flex-shrink: 0;
+  }
+  .adm-chart-canvas-wrap { position: relative; height: 280px; max-height: 300px; }
+  .adm-chart-canvas-wrap canvas { max-height: 100%; }
+  .adm-subgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 768px) { .adm-subgrid { grid-template-columns: 1fr; } }
+  .adm-quick { margin-top: 1.25rem; font-size: 0.88rem; color: #64748b; }
+  .adm-quick a { margin-right: 0.65rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="adm-dash-hero mb-4">
+    <h1>管理仪表盘</h1>
+    <p>数据截止 {{ today|date:"Y年n月j日" }} · 近 7 日预约趋势与今日业务概览</p>
+  </div>
+
+  <div class="row g-4 mb-2">
+    <div class="col-md-6 col-xl-3">
+      <div class="stat-card p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted small mb-2 fw-medium">总注册患者</p>
+            <h2 class="mb-0 fw-bolder text-dark">{{ total_patients }}</h2>
+          </div>
+          <div class="stat-icon-box"><i class="fas fa-users"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="stat-card stat-card--staff p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted small mb-2 fw-medium">在职医护</p>
+            <h2 class="mb-0 fw-bolder text-dark">{{ total_staff }}</h2>
+            <p class="text-muted small mb-0 mt-1" style="font-size:0.72rem;">医生 / 护士 / 护士长</p>
+          </div>
+          <div class="stat-icon-box"><i class="fas fa-user-nurse"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="stat-card p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted small mb-2 fw-medium">今日挂号</p>
+            <h2 class="mb-0 fw-bolder text-dark">{{ appt_today }}</h2>
+            <p class="text-muted small mb-0 mt-1" style="font-size:0.72rem;">不含已取消</p>
+          </div>
+          <div class="stat-icon-box"><i class="fas fa-calendar-check"></i></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 col-xl-3">
+      <div class="stat-card stat-card--month p-4 h-100">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <p class="text-muted small mb-2 fw-medium">本月挂号</p>
+            <h2 class="mb-0 fw-bolder text-dark">{{ appt_month }}</h2>
+          </div>
+          <div class="stat-icon-box"><i class="fas fa-calendar-alt"></i></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modern-card p-4 mt-4">
+    <h5 class="mb-4 fw-bold text-dark"><i class="fas fa-chart-area text-info me-2"></i>挂号趋势分析</h5>
+    <div class="adm-chart-canvas-wrap">
+      <canvas id="admApptTrendChart" aria-label="近7日预约折线图"></canvas>
+    </div>
+  </div>
+
+  <div class="adm-subgrid mt-4">
+    <div class="modern-card p-4">
+      <h3 class="h6 mb-3 text-dark fw-bold"><i class="fas fa-tasks text-info me-2"></i>今日挂号 · 按状态</h3>
+      {% if appt_by_status %}
+      <div class="table-responsive">
+        <table class="table table-hover table-modern align-middle mb-0">
+          <thead>
+            <tr><th>状态</th><th class="text-end">人数</th></tr>
+          </thead>
+          <tbody>
+            {% for row in appt_by_status %}
+            <tr><td>{{ row.label }}</td><td class="text-end fw-semibold">{{ row.n }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="hint mb-0">今日暂无有效挂号。</p>
+      {% endif %}
+    </div>
+    <div class="modern-card p-4">
+      <h3 class="h6 mb-3 text-dark fw-bold"><i class="fas fa-hospital text-success me-2"></i>今日挂号 · 按科室</h3>
+      {% if appt_by_dept %}
+      <div class="table-responsive">
+        <table class="table table-hover table-modern align-middle mb-0">
+          <thead>
+            <tr><th>科室</th><th class="text-end">人数</th></tr>
+          </thead>
+          <tbody>
+            {% for row in appt_by_dept %}
+            <tr><td>{{ row.schedule__department__name|default:"—" }}</td><td class="text-end fw-semibold">{{ row.n }}</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="hint mb-0">暂无按科室汇总数据。</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <p class="adm-quick mb-0">
+    <a href="{% url 'core:admin_patient_list' %}">患者档案</a>
+    <a href="{% url 'core:admin_department_list' %}">科室</a>
+    <a href="{% url 'core:admin_drug_list' %}">药品</a>
+    <a href="{% url 'core:admin_schedule_list' %}">排班</a>
+    <a href="{% url 'core:admin_financial_stats' %}">财务统计</a>
+    <a href="{% url 'core:admin_order_list' %}">订单管理</a>
+    <a href="{% url 'core:admin_appointment_list' %}">预约挂号</a>
+    <a href="{% url 'core:admin_medical_record_list' %}">病历</a>
+    <a href="{% url 'core:admin_prescription_list' %}">处方</a>
+  </p>
+</div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  var el = document.getElementById("admApptTrendChart");
+  if (!el || typeof Chart === "undefined") return;
+  var labels = JSON.parse('{{ chart_labels_json|default:"[]"|escapejs }}');
+  var counts = JSON.parse('{{ chart_counts_json|default:"[]"|escapejs }}');
+  new Chart(el, {
+    type: "line",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: "预约数",
+        data: counts,
+        borderColor: "rgb(13, 148, 136)",
+        backgroundColor: "rgba(13, 148, 136, 0.12)",
+        tension: 0.25,
+        fill: true,
+        pointRadius: 4,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: true } },
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
+})();
+</script>
+{% endblock %}

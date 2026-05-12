@@ -1,0 +1,42 @@
+{% extends "core/base.html" %}
+{% block title %}{% if object %}编辑生产厂家{% else %}新建生产厂家{% endif %} — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner hn-mfg-form-wrap{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .hn-mfg-form-wrap { max-width: 640px; }
+  .hn-mfg-form-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    padding: 1.35rem 1.5rem 1.5rem;
+  }
+  .hn-mfg-form-card h1 { font-size: 1.35rem; font-weight: 800; margin: 0 0 1.1rem; color: #0f172a; }
+  .hn-mfg-form-card label { display: block; font-size: 0.82rem; font-weight: 600; color: #475569; margin-top: 0.85rem; }
+  .hn-mfg-form-card input[type="text"],
+  .hn-mfg-form-card textarea {
+    width: 100%; margin-top: 0.3rem; padding: 0.55rem 0.65rem;
+    border: 1px solid #e2e8f0; border-radius: 8px; font-size: 1rem; font-family: inherit;
+  }
+  .hn-mfg-form-card textarea { min-height: 72px; resize: vertical; }
+  .hn-mfg-form-card .btn { margin-top: 1.35rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="hn-mfg-form-card">
+  <h1>{% if object %}编辑生产厂家{% else %}新建生产厂家{% endif %}</h1>
+  <form method="post" action="">
+    {% csrf_token %}
+    {% for field in form %}
+      <p style="margin:0;">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </p>
+    {% endfor %}
+    <button type="submit" class="btn">保存</button>
+  </form>
+  <p class="hint" style="margin-top:1rem;"><a href="{% url 'core:manufacturer_list' %}">返回列表</a></p>
+</div>
+{% endblock %}

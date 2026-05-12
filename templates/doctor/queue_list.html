@@ -1,0 +1,109 @@
+{% extends "core/base.html" %}
+{% block title %}今日患者队列 — 医生工作台{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .doc-queue-page h1 { font-size: 1.45rem; font-weight: 800; margin: 0 0 0.35rem; color: #0f172a; }
+  .doc-queue-page .hint { margin: 0 0 1rem; font-size: 0.88rem; color: #64748b; }
+  .doc-queue-page .card { border-radius: 14px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.07); border: 1px solid #e2e8f0; }
+  .doc-table-wrap { overflow-x: auto; margin-top: 0.5rem; }
+  .doc-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .doc-table th, .doc-table td { border: 1px solid #e8ecf1; padding: 0.6rem 0.7rem; text-align: left; vertical-align: middle; }
+  .doc-table th { background: #f8fafc; color: #475569; font-weight: 600; }
+  .doc-table tbody tr:hover { background: #fafbfc; }
+  .doc-ai-badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    background: #f0fdf4;
+    color: #047857;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 0.22rem 0.55rem;
+    white-space: nowrap;
+  }
+
+  @keyframes doc-pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55); }
+    50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+  }
+  .doc-st { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; font-size: 0.82rem; padding: 0.28rem 0.55rem; border-radius: 999px; line-height: 1.2; }
+  .doc-st--pending {
+    background: #dc2626;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    animation: doc-pulse-red 1.6s ease-in-out infinite;
+  }
+  .doc-st__pulse {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: #fff;
+    flex-shrink: 0;
+    animation: doc-blink 1s step-end infinite;
+  }
+  @keyframes doc-blink { 50% { opacity: 0.35; } }
+  .doc-st--done { background: #f0fdf4; color: #6b7280; font-weight: 600; border: 1px solid #d1fae5; }
+  .doc-st--progress { background: #ede9fe; color: #5b21b6; font-weight: 600; }
+  .doc-st--confirmed { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+  .doc-st--muted { background: #f1f5f9; color: #64748b; font-weight: 500; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card doc-queue-page">
+  <h1>今日患者队列</h1>
+  <p class="hint">您名下今日出诊的预约（不含已取消）。<a href="{% url 'core:doctor_dashboard' %}">返回我的看板</a></p>
+  {% if appointments %}
+  <div class="doc-table-wrap">
+    <table class="doc-table">
+      <thead>
+        <tr>
+          <th>患者</th>
+          <th>科室</th>
+          <th>班次</th>
+          <th>就诊状态</th>
+          <th>预问诊</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td><strong>{{ a.patient.real_name|default:a.patient.username }}</strong></td>
+          <td>{{ a.schedule.department.name }}</td>
+          <td>{{ a.schedule.get_shift_display }}</td>
+          <td>{% include "doctor/includes/appointment_status_cell.html" with a=a %}</td>
+          <td>
+            {% if a.ai_report %}
+              {% with kw=a.ai_report.structured_content.symptom_keyword %}
+                {% if kw %}
+                  <span class="doc-ai-badge">AI：{{ kw }}</span>
+                {% else %}
+                  <span style="color:#059669;font-weight:600;">有</span>
+                {% endif %}
+              {% endwith %}
+            {% else %}
+              <span class="hint">无</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.status != 'completed' and a.status != 'cancelled' %}
+            <a href="{% url 'core:doctor_appointment_consult' pk=a.pk %}">{% if a.status == 'pending' %}<strong style="color:#dc2626;">接诊</strong>{% else %}接诊{% endif %}</a>
+            {% else %}
+            <a href="{% url 'core:doctor_appointment_consult' pk=a.pk %}">查看</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="hint">今日暂无预约患者。</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,319 @@
+{% extends "base_patient.html" %}
+{% block title %}{{ doctor.real_name|default:doctor.username }} — 排班挂号 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block extra_css %}
+<style>
+  .booking-page {
+    max-width: 1280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .modern-card {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    text-align: left;
+  }
+
+  .doctor-avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+    color: #0d9488;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .booking-name {
+    margin: 0 0 0.35rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+  }
+  .booking-meta {
+    margin: 0;
+    font-size: 0.9375rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
+
+  .booking-grid-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    background: #fff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+  }
+
+  /* 排班表格现代化重构 */
+  .modern-schedule-table {
+    width: 100%;
+    min-width: 1040px;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    border: none;
+    table-layout: fixed;
+  }
+  .modern-schedule-table th {
+    background-color: #f8fafc;
+    padding: 1rem;
+    font-weight: 600;
+    color: #475569;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    border-right: 1px solid #f1f5f9;
+    vertical-align: middle;
+  }
+  .modern-schedule-table th:last-child {
+    border-right: none;
+  }
+  .modern-schedule-table thead th.booking-corner {
+    width: 7.75rem;
+    min-width: 7.75rem;
+    background: #f1f5f9;
+    border-right: 1px solid #e2e8f0;
+  }
+  .modern-schedule-table tbody th.booking-slot-head {
+    width: 7.75rem;
+    min-width: 7.75rem;
+    background: #f8fafc;
+    color: #334155;
+    white-space: normal;
+    word-wrap: break-word;
+    border-right: 1px solid #e2e8f0;
+  }
+  .modern-schedule-table td {
+    padding: 1.2rem 0.5rem;
+    text-align: center;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f1f5f9;
+    transition: background-color 0.2s;
+    background: #fff;
+    width: 12.5%;
+  }
+  .modern-schedule-table td:last-child {
+    border-right: none;
+  }
+  .modern-schedule-table tbody tr:last-child th,
+  .modern-schedule-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+  .modern-schedule-table td:hover {
+    background-color: #f0fdfa;
+  }
+
+  .booking-day-w {
+    display: block;
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .booking-day-d {
+    display: block;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 0.8125rem;
+    margin-top: 0.15rem;
+  }
+  .bst-main {
+    display: block;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.25;
+    margin-bottom: 0.2rem;
+  }
+  .bst-sub {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #64748b;
+    line-height: 1.3;
+    letter-spacing: 0.02em;
+  }
+
+  .booking-cell {
+    min-height: 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    padding: 0.15rem 0;
+  }
+
+  /* 有号按钮状态 */
+  .slot-available-btn {
+    background-color: #ccfbf1;
+    color: #0f766e;
+    border: 1px solid #99f6e4;
+    border-radius: 50px;
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    max-width: 100%;
+    transition: all 0.2s;
+    box-sizing: border-box;
+  }
+  .slot-available-btn:hover {
+    background-color: #0d9488;
+    color: #ffffff;
+    border-color: #0d9488;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(13, 148, 136, 0.2);
+  }
+  .slot-available-btn .slot-meta {
+    font-size: 0.75rem;
+    font-weight: 500;
+    opacity: 0.95;
+  }
+  .slot-available-btn .slot-dept {
+    font-size: 0.6875rem;
+    opacity: 0.92;
+    line-height: 1.2;
+  }
+
+  .slot-full {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #94a3b8;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 50px;
+    cursor: not-allowed;
+    user-select: none;
+  }
+
+  /* 无号状态 */
+  .slot-empty {
+    color: #cbd5e1;
+    font-weight: 300;
+    font-size: 1.25rem;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  .booking-back {
+    font-size: 0.875rem;
+    color: #64748b;
+    text-decoration: none;
+  }
+  .booking-back:hover { color: #0d9488; }
+  .booking-hint {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin-bottom: 1.25rem;
+    line-height: 1.55;
+  }
+
+  @media (max-width: 576px) {
+    .modern-schedule-table { min-width: 100%; }
+    .modern-schedule-table thead th.booking-corner,
+    .modern-schedule-table tbody th.booking-slot-head {
+      width: 6.5rem;
+      min-width: 6.5rem;
+    }
+    .bst-main { font-size: 0.9rem; }
+    .bst-sub { font-size: 0.7rem; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-3 px-md-4 py-4 py-md-5 booking-page">
+  <p class="mb-3"><a href="{% url 'core:patient_doctors' %}" class="booking-back">← 返回找医生</a></p>
+
+  <div class="modern-card">
+    <div class="doctor-avatar-placeholder" aria-hidden="true">
+      {% with n=doctor.real_name|default:doctor.username %}
+        {% if n|length > 1 %}{{ n|slice:":2"|upper }}{% else %}{{ n|slice:":1"|upper }}{% endif %}
+      {% endwith %}
+    </div>
+    <div>
+      <h1 class="booking-name">{{ doctor.real_name|default:doctor.username }}</h1>
+      <p class="booking-meta">主治医生{% if doctor.department %} · {{ doctor.department.name }}{% else %} · 科室未分配{% endif %}</p>
+    </div>
+  </div>
+
+  <p class="booking-hint">今日起连续 7 天号源；有号时点击「挂号」进入预约确认页（该页提交时含 CSRF 校验）。</p>
+
+  <div class="booking-grid-wrap">
+    <table class="modern-schedule-table" role="grid" aria-label="医生未来七日排班">
+      <thead>
+        <tr>
+          <th scope="col" class="booking-corner" aria-hidden="true"></th>
+          {% for day in calendar_days %}
+          <th scope="col">
+            <span class="booking-day-w">{{ day.day_name }}</span>
+            <span class="booking-day-d">{{ day.date_short }}</span>
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in grid_rows %}
+        <tr>
+          <th scope="row" class="booking-slot-head">
+            {% if row.slot_key == 'morning' %}
+              <span class="bst-main">上午</span>
+              <span class="bst-sub">08:00 – 12:00</span>
+            {% else %}
+              <span class="bst-main">下午</span>
+              <span class="bst-sub">14:00 – 18:00</span>
+            {% endif %}
+          </th>
+          {% for cell in row.cells %}
+          <td>
+            <div class="booking-cell">
+              {% for s in cell.schedules %}
+                {% if s.remaining_slots > 0 %}
+                <a href="{% url 'core:patient_appointment_book' schedule_id=s.pk %}" class="slot-available-btn">
+                  <span>挂号</span>
+                  <span class="slot-meta">￥{{ s.price }} · 剩余 {{ s.remaining_slots }}</span>
+                  {% if cell.schedules|length > 1 %}
+                  <span class="slot-dept">{{ s.department.name }}</span>
+                  {% endif %}
+                </a>
+                {% else %}
+                <span class="slot-full" aria-disabled="true">{% if cell.schedules|length > 1 %}{{ s.department.name }} · {% endif %}￥{{ s.price }} · 已满</span>
+                {% endif %}
+              {% empty %}
+                <span class="slot-empty">—</span>
+              {% endfor %}
+            </div>
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

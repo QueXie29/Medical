@@ -1,0 +1,176 @@
+{% extends "base_patient.html" %}
+{% block title %}找医生 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block extra_css %}
+<style>
+    /* 重新定义全局卡片基础质感 */
+    .modern-card {
+        background: #ffffff;
+        border: 1px solid #f1f5f9; /* 极淡的边框 */
+        border-radius: 20px; /* 大圆角显得更亲和 */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); /* 极其柔和的阴影 */
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 2rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        height: 100%;
+    }
+
+    /* 悬浮交互：轻轻上浮并加深阴影 */
+    .modern-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+        border-color: #e2e8f0;
+    }
+
+    /* 摒弃深蓝，改用治愈系“浅青/高级灰蓝”按钮 */
+    .btn-modern-primary {
+        background-color: #0d9488; /* 现代医疗青色 */
+        color: #ffffff;
+        border-radius: 50px; /* 胶囊形按钮，显得不那么死板 */
+        padding: 0.6rem 2rem;
+        font-weight: 500;
+        letter-spacing: 1px;
+        border: none;
+        transition: background-color 0.2s;
+        width: 80%; /* 不占满全宽，留出呼吸感 */
+        margin-top: auto; /* 自动推到底部 */
+        text-decoration: none;
+        text-align: center;
+        display: inline-block;
+        box-sizing: border-box;
+    }
+
+    .btn-modern-primary:hover {
+        background-color: #0f766e;
+        color: #ffffff;
+    }
+
+    .btn-modern-outline {
+        background-color: transparent;
+        color: #0d9488;
+        border: 1px solid #0d9488;
+        border-radius: 50px;
+        padding: 0.5rem 2rem;
+        font-weight: 500;
+        width: 80%;
+        margin-top: auto;
+        transition: all 0.2s;
+    }
+
+    .btn-modern-outline:hover {
+        background-color: #f0fdfa; /* 极淡的青色背景 */
+        color: #0f766e;
+    }
+
+    /* 医生头像重构 */
+    .doctor-avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+        color: #0d9488;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1.2rem;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* 顶部科室筛选 Pill：选中青绿，未选中淡灰 */
+    .doctor-list-page .pill-filters {
+        gap: 0.5rem 0.65rem;
+    }
+    .pill-filter {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.45rem 1.15rem;
+        border-radius: 50px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .pill-filter-active {
+        background-color: #0d9488;
+        color: #ffffff;
+        border-color: #0d9488;
+    }
+    .pill-filter-active:hover {
+        background-color: #0f766e;
+        color: #ffffff;
+        border-color: #0f766e;
+    }
+    .pill-filter-inactive {
+        background-color: #f1f5f9;
+        color: #64748b;
+        border-color: #e2e8f0;
+    }
+    .pill-filter-inactive:hover {
+        background-color: #e2e8f0;
+        color: #475569;
+        border-color: #cbd5e1;
+    }
+
+    .doctor-list-page .page-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        max-width: 42rem;
+    }
+    .doctor-list-page .doctor-meta {
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.7;
+        margin-bottom: 0.35rem;
+    }
+    .doctor-list-page .doctor-meta:last-of-type {
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container py-4 py-md-5 doctor-list-page">
+  <h1 class="h3 fw-bold mb-2 text-dark">找医生</h1>
+  <p class="page-lead mb-4">按科室筛选主治医生，查看未来 7 日号源并预约挂号。各班次<strong>挂号费</strong>以号源页与确认页展示为准（￥）。</p>
+  <div class="d-flex flex-wrap pill-filters mb-4">
+    <a href="{% url 'core:patient_doctors' %}" class="pill-filter {% if selected_department_id is None %}pill-filter-active{% else %}pill-filter-inactive{% endif %}">全部</a>
+    {% for d in all_departments %}
+    <a href="{% url 'core:patient_doctors' %}?department={{ d.pk }}" class="pill-filter {% if selected_department_id == d.pk %}pill-filter-active{% else %}pill-filter-inactive{% endif %}">{{ d.name }}</a>
+    {% endfor %}
+  </div>
+  {% if doctors %}
+  <div class="row g-4">
+    {% for doc in doctors %}
+    <div class="col-12 col-md-3">
+      <div class="modern-card">
+        <div class="doctor-avatar-placeholder" aria-hidden="true">
+          {{ doc.real_name|default:doc.username|slice:":1"|upper }}
+        </div>
+        <h2 class="h5 fw-bold mb-2 text-dark">{{ doc.real_name|default:doc.username }}</h2>
+        <p class="doctor-meta text-muted mb-0">主治医生</p>
+        {% if doc.department %}
+        <p class="doctor-meta text-muted">{{ doc.department.name }}</p>
+        {% else %}
+        <p class="doctor-meta text-muted">科室未分配</p>
+        {% endif %}
+        {% if doc.min_booking_price is not None %}
+        <p class="doctor-meta mb-2" style="color:#b45309;font-weight:600;">近期号源低至 ￥{{ doc.min_booking_price }}</p>
+        {% else %}
+        <p class="doctor-meta text-muted small mb-2">近期开放排班及费用见号源页</p>
+        {% endif %}
+        <a href="{% url 'core:patient_doctor_schedules' doctor_id=doc.pk %}" class="btn-modern-primary">预约挂号</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted">当前筛选下暂无医生，请更换科室或稍后再试。</p>
+  {% endif %}
+</div>
+{% endblock %}

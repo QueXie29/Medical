@@ -1,0 +1,178 @@
+{% extends "core/base.html" %}
+{% block title %}预问诊 #{{ report.pk }} — 管理{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .medical-detail-header.card {
+    position: relative;
+    overflow: hidden;
+    border: 0;
+    border-radius: 14px;
+    background: linear-gradient(to right, #f8fafc, #ffffff);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+    padding: 1.35rem 1.5rem 1.35rem 1.75rem;
+    margin-bottom: 1.75rem;
+  }
+  .medical-detail-header::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    background: #0d9488;
+  }
+  .medical-detail-header__inner {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .medical-detail-header__main {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    min-width: 0;
+  }
+  .medical-detail-header__icon {
+    width: 2.45rem;
+    height: 2.45rem;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ccfbf1;
+    color: #0f766e;
+    flex: 0 0 auto;
+    margin-top: 0.15rem;
+  }
+  .medical-detail-header__copy {
+    min-width: 0;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+  }
+  .medical-detail-header__badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #99f6e4;
+    border-radius: 999px;
+    background: #f0fdfa;
+    color: #0f766e;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 0.25rem 0.65rem;
+    margin-bottom: 0.45rem;
+  }
+  .medical-detail-header__title {
+    color: #1e293b;
+    font-size: 1.55rem;
+    font-weight: 800;
+    line-height: 1.5;
+    letter-spacing: 0.01em;
+    margin: 0;
+    word-break: break-word;
+  }
+  .medical-detail-header__subtitle {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0.2rem 0 0;
+  }
+  .medical-detail-header__status {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    background: #f0fdf4;
+    color: #047857;
+    flex: 0 0 auto;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 0.38rem 0.75rem;
+    white-space: nowrap;
+  }
+  @media (max-width: 640px) {
+    .medical-detail-header.card {
+      padding: 1.15rem 1rem 1.15rem 1.35rem;
+    }
+    .medical-detail-header__inner {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .medical-detail-header__title {
+      font-size: 1.25rem;
+    }
+    .medical-detail-header__status {
+      align-self: flex-start;
+    }
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <a href="{% url 'core:admin_ai_report_list' %}" class="detail-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 返回列表</a>
+
+  <div class="modern-detail-card">
+    <div class="card medical-detail-header">
+      <div class="medical-detail-header__inner">
+        <div class="medical-detail-header__main">
+          <div class="medical-detail-header__icon" aria-hidden="true">
+            <i class="fas fa-file-medical-alt"></i>
+          </div>
+          <div class="medical-detail-header__copy">
+            <span class="medical-detail-header__badge">{{ symptom_keyword }}</span>
+            <h1 class="medical-detail-header__title">{{ report.title|default:"预问诊报告" }}</h1>
+            <p class="medical-detail-header__subtitle">
+              问诊时间：{{ report.created_at|date:"Y-m-d H:i" }} · 报告编号 #{{ report.pk }}
+            </p>
+          </div>
+        </div>
+        <span class="medical-detail-header__status">已完成</span>
+      </div>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">患者</div>
+          <div class="info-value">{{ report.patient.real_name|default:report.patient.username }}（{{ report.patient.username }}）</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">标题</div>
+          <div class="info-value">{{ report.title|default:"—" }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">创建</div>
+          <div class="info-value">{{ report.created_at|date:"Y-m-d H:i" }}</div>
+        </div>
+      </div>
+      {% if report.recommended_department %}
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">推荐科室</div>
+          <div class="info-value">{{ report.recommended_department.name }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <hr class="my-4" style="border-color:#e2e8f0;">
+
+    <div class="mb-4">
+      <div class="info-label">摘要</div>
+      <div class="content-block content-block--compact">{{ report.summary|default:"—" }}</div>
+    </div>
+
+    <div class="mb-4">
+      <div class="info-label">结构化内容（JSON）</div>
+      <div class="content-block content-block--compact">{{ structured_json }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

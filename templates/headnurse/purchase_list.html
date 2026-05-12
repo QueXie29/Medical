@@ -1,0 +1,187 @@
+{% extends "core/base.html" %}
+{% block title %}采购审批中心 — 护士长工作台{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide hn-pr-wrap{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .main-inner.hn-pr-wrap { max-width: 1100px; }
+  .hn-pr-hero h1 { font-size: 1.45rem; font-weight: 800; margin: 0 0 0.35rem; color: #0f172a; }
+  .hn-pr-hero p { margin: 0 0 1.25rem; font-size: 0.88rem; color: #64748b; }
+  .hn-pr-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+  .hn-pr-card__head {
+    padding: 1rem 1.25rem;
+    border-bottom: 2px solid #f1f5f9;
+    background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+  }
+  .hn-pr-card__head h2 { font-size: 1.08rem; font-weight: 700; margin: 0; color: #0f172a; }
+
+  /* CSS Tabs（无 JS）：radio 与 tab-bar、tab-panels 须为同级 */
+  .hn-tab-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hn-tab-bar {
+    display: flex;
+    gap: 0.25rem;
+    padding: 0.65rem 1rem 0;
+    border-bottom: 1px solid #e8ecf1;
+    background: #fff;
+  }
+  .hn-tab-btn {
+    padding: 0.55rem 1.1rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #64748b;
+    border-radius: 10px 10px 0 0;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    margin-bottom: -1px;
+    background: transparent;
+  }
+  .hn-tab-btn:hover { color: #334155; background: #f8fafc; }
+  #hn-tab-pending:checked ~ .hn-tab-bar label[for="hn-tab-pending"],
+  #hn-tab-history:checked ~ .hn-tab-bar label[for="hn-tab-history"] {
+    color: #1d4ed8;
+    background: #fff;
+    border-color: #e8ecf1;
+    border-bottom-color: #fff;
+  }
+  .hn-tab-panels { padding: 0; }
+  .hn-tab-panel { display: none; padding: 1rem 1.25rem 1.25rem; }
+  #hn-tab-pending:checked ~ .hn-tab-panels .hn-tab-panel--pending { display: block; }
+  #hn-tab-history:checked ~ .hn-tab-panels .hn-tab-panel--history { display: block; }
+
+  .hn-table-wrap { overflow-x: auto; }
+  .hn-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  .hn-table th, .hn-table td { border: 1px solid #e8ecf1; padding: 0.55rem 0.65rem; text-align: left; vertical-align: middle; }
+  .hn-table th { background: #f8fafc; color: #475569; font-weight: 600; }
+  .hn-table tbody tr:hover { background: #fafbfc; }
+
+  .hn-btn { display: inline-block; padding: 0.4rem 0.75rem; font-size: 0.82rem; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; font-family: inherit; }
+  .hn-btn--ok { background: linear-gradient(180deg, #10b981 0%, #059669 100%); color: #fff; }
+  .hn-btn--no { background: #64748b; color: #fff; }
+  .hn-input-sm { padding: 0.35rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.82rem; max-width: 10rem; }
+
+  .hn-status-approved { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; background: #d1fae5; color: #047857; }
+  .hn-status-rejected { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; background: #f1f5f9; color: #64748b; }
+  .hn-empty { padding: 1.5rem; text-align: center; color: #94a3b8; font-size: 0.88rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="hn-pr-hero">
+  <h1>采购审批中心</h1>
+  <p>处理护士提交的药品采购申请。<a href="{% url 'core:headnurse_dashboard' %}">返回管理看板</a></p>
+</div>
+
+<div class="hn-pr-card">
+  <div class="hn-pr-card__head">
+    <h2>采购申请</h2>
+  </div>
+
+  <input type="radio" name="hn_pr_tab" id="hn-tab-pending" class="hn-tab-input" checked>
+  <input type="radio" name="hn_pr_tab" id="hn-tab-history" class="hn-tab-input">
+
+  <div class="hn-tab-bar">
+    <label for="hn-tab-pending" class="hn-tab-btn">待审批</label>
+    <label for="hn-tab-history" class="hn-tab-btn">审批历史</label>
+  </div>
+
+  <div class="hn-tab-panels">
+    <div class="hn-tab-panel hn-tab-panel--pending">
+      {% if pending_requests %}
+      <div class="hn-table-wrap">
+        <table class="hn-table">
+          <thead>
+            <tr>
+              <th>申请时间</th>
+              <th>申请人</th>
+              <th>药品</th>
+              <th>数量</th>
+              <th>原因</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in pending_requests %}
+            <tr>
+              <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
+              <td>{{ r.requester.real_name|default:r.requester.username }}</td>
+              <td>{{ r.drug.name }}（库存 {{ r.drug.stock_quantity }}）</td>
+              <td>{{ r.quantity }}</td>
+              <td>{{ r.reason|default:"—"|truncatechars:48 }}</td>
+              <td>
+                <form method="post" action="{% url 'core:headnurse_purchase_decide' pk=r.pk %}" style="display:inline;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="approve">
+                  <button type="submit" class="hn-btn hn-btn--ok">同意</button>
+                </form>
+                <form method="post" action="{% url 'core:headnurse_purchase_decide' pk=r.pk %}" style="display:inline;margin-left:0.35rem;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="reject">
+                  <input type="text" name="review_comment" class="hn-input-sm" placeholder="驳回说明">
+                  <button type="submit" class="hn-btn hn-btn--no" style="margin-left:0.25rem;">驳回</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="hn-empty">暂无待审批申请。</div>
+      {% endif %}
+    </div>
+
+    <div class="hn-tab-panel hn-tab-panel--history">
+      {% if history_requests %}
+      <div class="hn-table-wrap">
+        <table class="hn-table">
+          <thead>
+            <tr>
+              <th>审批时间</th>
+              <th>申请人</th>
+              <th>药品</th>
+              <th>数量</th>
+              <th>结果</th>
+              <th>审批人</th>
+              <th>意见</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in history_requests %}
+            <tr>
+              <td>{% if r.reviewed_at %}{{ r.reviewed_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</td>
+              <td>{{ r.requester.real_name|default:r.requester.username }}</td>
+              <td>{{ r.drug.name }}</td>
+              <td>{{ r.quantity }}</td>
+              <td>
+                {% if r.status == 'approved' %}
+                <span class="hn-status-approved">已同意</span>
+                {% else %}
+                <span class="hn-status-rejected">已驳回</span>
+                {% endif %}
+              </td>
+              <td>{% if r.reviewer %}{{ r.reviewer.real_name|default:r.reviewer.username }}{% else %}—{% endif %}</td>
+              <td>{{ r.review_comment|default:"—"|truncatechars:40 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="hn-empty">暂无审批历史。</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

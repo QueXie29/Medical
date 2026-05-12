@@ -1,0 +1,134 @@
+{% extends "base_patient.html" %}
+{% block content %}
+<div class="container py-4">
+  <h1 class="h4 fw-bold mb-4 text-dark">我的信息</h1>
+  <div class="row g-4">
+    <div class="col-md-3">
+      {% if user.is_authenticated %}
+      <div class="card border-0 shadow-sm rounded-3 mb-3 patient-balance-card">
+        <div class="card-body py-3">
+          <p class="small text-muted mb-1">账户余额</p>
+          <p class="h4 mb-2 fw-bold patient-balance-val">￥{{ user.balance|floatformat:2 }}</p>
+          <button type="button" class="btn btn-sm btn-warning fw-semibold text-dark" data-bs-toggle="modal" data-bs-target="#rechargeModal">立即充值</button>
+        </div>
+      </div>
+      {% endif %}
+      <div class="list-group shadow-sm rounded-3 overflow-hidden">
+        <a href="{% url 'core:patient_profile_edit' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'patient_profile_edit' %}active{% endif %}">完善个人信息</a>
+        <a href="{% url 'core:patient_password_change' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'patient_password_change' %}active{% endif %}">修改密码</a>
+        <a href="{% url 'core:patient_appointment_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'patient_appointment_list' %}active{% endif %}">我的预约</a>
+        <a href="{% url 'core:patient_order_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'patient_order_list' %}active{% endif %}">我的账单</a>
+        <a href="{% url 'core:patient_ai_report_list' %}" class="list-group-item list-group-item-action {% if request.resolver_match.url_name == 'patient_ai_report_list' %}active{% endif %}">我的预问诊报告</a>
+      </div>
+
+      <div class="modal fade" id="rechargeModal" tabindex="-1" aria-labelledby="rechargeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="rechargeModalLabel">账户充值</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body">
+              <p class="small text-muted mb-3">快捷金额或手动输入（0.01～10000 元，精确到分）</p>
+              <form method="post" action="{% url 'core:patient_recharge' %}" id="recharge-form">
+                {% csrf_token %}
+                <div class="row g-2 mb-3">
+                  <div class="col-4">
+                    <button type="button" class="amount-btn active" data-value="50">50元</button>
+                  </div>
+                  <div class="col-4">
+                    <button type="button" class="amount-btn" data-value="100">100元</button>
+                  </div>
+                  <div class="col-4">
+                    <button type="button" class="amount-btn" data-value="200">200元</button>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="recharge_amount">充值金额（元）</label>
+                  <input type="number" class="form-control" id="recharge_amount" name="amount" value="50" step="0.01" min="0.01" max="10000" placeholder="例如 88.00" required>
+                </div>
+                <button type="submit" class="btn btn-warning fw-semibold w-100">确认充值</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-9">
+      <div class="bg-white rounded-3 shadow-sm p-4 p-md-4 border border-light">
+        {% block patient_center_main %}{% endblock %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .patient-balance-card {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 1px solid #fcd34d !important;
+  }
+  .patient-balance-val { color: #b45309; letter-spacing: 0.02em; }
+
+  /* 快捷金额按钮基础样式 */
+  .amount-btn {
+    border: 2px solid #e2e8f0;
+    background-color: #ffffff;
+    color: #475569;
+    border-radius: 12px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+    width: 100%;
+  }
+
+  /* 悬浮时的轻微反馈 */
+  .amount-btn:hover {
+    border-color: #99f6e4;
+    background-color: #f0fdfa;
+    color: #0d9488;
+    transform: translateY(-2px);
+  }
+
+  /* 被选中时的强反馈高亮状态 */
+  .amount-btn.active {
+    background-color: #0d9488;
+    color: #ffffff;
+    border-color: #0d9488;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+    transform: translateY(-2px);
+  }
+</style>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    var amountBtns = document.querySelectorAll('.amount-btn');
+    var amountInput = document.getElementById('recharge_amount');
+
+    amountBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        amountBtns.forEach(function (b) {
+          b.classList.remove('active');
+        });
+        this.classList.add('active');
+        if (amountInput) {
+          amountInput.value = this.getAttribute('data-value');
+        }
+      });
+    });
+
+    if (amountInput) {
+      amountInput.addEventListener('input', function () {
+        amountBtns.forEach(function (b) {
+          b.classList.remove('active');
+        });
+      });
+    }
+  });
+</script>
+{% endblock %}

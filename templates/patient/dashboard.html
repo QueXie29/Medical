@@ -1,0 +1,76 @@
+{% extends "core/base.html" %}
+{% block title %}患者中心 — 智慧医疗{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>患者中心</h1>
+  <p class="hint">历史挂号与就诊诊断摘要（以医生录入的电子病历为准）。</p>
+  <p>
+    <a href="{% url 'core:patient_appointments' %}">预约挂号</a>
+    ·
+    <a href="{% url 'core:patient_appointment_list' %}">我的挂号</a>
+    ·
+    <a href="{% url 'core:patient_ai_triage' %}">AI 预问诊</a>
+  </p>
+</div>
+
+{% if appointments %}
+<div class="card" style="margin-top:1rem;">
+  <h2 style="font-size:1.1rem;margin-top:0;">挂号记录</h2>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>预约时间</th>
+          <th>科室 / 医生</th>
+          <th>就诊日</th>
+          <th>状态</th>
+          <th>预问诊报告</th>
+          <th>诊断结果</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td>{{ a.created_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            {{ a.schedule.department.name }}<br>
+            <span class="hint">{{ a.schedule.doctor.real_name|default:a.schedule.doctor.username }}{% if a.schedule.doctor.department %} · 医生所属：{{ a.schedule.doctor.department.name }}{% endif %}</span>
+          </td>
+          <td>{{ a.schedule.work_date }} {{ a.schedule.get_shift_display }}</td>
+          <td>{{ a.get_status_display }}</td>
+          <td>
+            {% if a.ai_report %}
+              #{{ a.ai_report.pk }} {{ a.ai_report.title|truncatechars:16 }}
+            {% else %}
+              <span class="hint">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if a.medical_record %}
+              <strong>诊断：</strong>{{ a.medical_record.diagnosis|truncatewords:15 }}
+              {% if a.medical_record.treatment_plan %}
+              <br><span class="hint">处理：{{ a.medical_record.treatment_plan|truncatewords:10 }}</span>
+              {% endif %}
+            {% else %}
+              <span class="hint">待就诊 / 暂无病历</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="card" style="margin-top:1rem;">
+  <p class="hint">暂无挂号记录。</p>
+</div>
+{% endif %}
+
+<style>
+  .table-wrap { overflow-x: auto; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .data-table th, .data-table td { border: 1px solid var(--border); padding: 0.5rem 0.5rem; vertical-align: top; }
+  .data-table th { background: #f1f3f5; }
+</style>
+{% endblock %}

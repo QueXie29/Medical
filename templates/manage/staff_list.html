@@ -1,0 +1,115 @@
+{% extends "core/base.html" %}
+{% block title %}员工信息 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .pagination { margin-top: 1rem; font-size: 0.875rem; }
+    .pagination a { margin-right: 0.5rem; }
+    .actions { white-space: nowrap; }
+    .staff-search { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 1rem; margin-bottom: 0.5rem; }
+    .staff-search input[type="search"] { flex: 1; min-width: 12rem; max-width: 24rem; margin-top: 0; }
+    .staff-search .btn-search { margin-top: 0; }
+    .badge-status {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-status--ok { background: #d3f9d8; color: #2b8a3e; }
+    .badge-status--off { background: #e9ecef; color: #495057; }
+    tr.staff-row-inactive { opacity: 0.72; background: #f8f9fa; }
+    tr.staff-row-inactive .actions .hint { cursor: not-allowed; }
+    .visually-hidden {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>员工信息</h1>
+  <p class="hint">展示医护与管理员账号；主治医生显示所属科室，可在编辑页调整。</p>
+  <p>
+    <a href="{% url 'core:admin_create_employee' %}" class="btn" style="margin-top:0;">新建员工账号</a>
+  </p>
+  <form class="staff-search" method="get" action="{% url 'core:admin_staff_list' %}" role="search">
+    <label for="staff-q" class="visually-hidden">按姓名或用户名搜索</label>
+    <input type="search" id="staff-q" name="q" value="{{ q }}" placeholder="按姓名或用户名模糊搜索…" autocomplete="off">
+    <button type="submit" class="btn btn-search">搜索</button>
+    {% if q %}
+    <a href="{% url 'core:admin_staff_list' %}" class="hint" style="margin-top:0;">清除筛选</a>
+    {% endif %}
+  </form>
+  {% if staff_members %}
+  <div class="table-responsive" style="margin-top:1rem;">
+    <table class="table table-hover table-modern align-middle">
+      <thead>
+        <tr>
+          <th>用户名</th>
+          <th>姓名</th>
+          <th>角色</th>
+          <th>所属科室</th>
+          <th>状态</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in staff_members %}
+        <tr class="{% if not u.is_active %}staff-row-inactive{% endif %}">
+          <td>{{ u.username }}</td>
+          <td>{{ u.real_name|default:"—" }}</td>
+          <td>{{ u.get_role_display }}</td>
+          <td>
+            {% if u.role == 'doctor' %}
+              {% if u.department %}{{ u.department.name }}{% else %}<span class="hint">未分配</span>{% endif %}
+            {% else %}
+              <span class="hint">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge-status badge-status--ok">正常</span>
+            {% else %}
+              <span class="badge-status badge-status--off">已停用</span>
+            {% endif %}
+          </td>
+          <td class="actions">
+            {% if u.is_active %}
+              <a href="{% url 'core:admin_staff_edit' pk=u.pk %}">编辑</a>
+              {% if u.pk != user.pk %}
+                · <a href="{% url 'core:admin_staff_delete' pk=u.pk %}">删除</a>
+              {% else %}
+                <span class="hint">（当前账号）</span>
+              {% endif %}
+            {% else %}
+              <span class="hint" title="已停用账号不可编辑或再次删除">编辑</span>
+              {% if u.pk != user.pk %}
+                · <span class="hint" title="已停用账号不可编辑或再次删除">删除</span>
+              {% else %}
+                · <span class="hint">（当前账号）</span>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">上一页</a>
+    {% endif %}
+    <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}{% if q %}&amp;q={{ q|urlencode }}{% endif %}">下一页</a>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="hint">暂无员工账号。</p>
+  {% endif %}
+</div>
+{% endblock %}

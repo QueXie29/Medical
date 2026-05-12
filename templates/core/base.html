@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,.04);
+    }
+    h1 { font-size: 1.25rem; margin: 0 0 1rem; }
+    label { display: block; font-size: 0.875rem; color: var(--muted); margin-top: 0.75rem; }
+    input[type="text"], input[type="email"], input[type="password"],
+    input[type="number"], input[type="date"],
+    select, textarea {
+      width: 100%;
+      margin-top: 0.25rem;
+      padding: 0.5rem 0.6rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 1rem;
+      font-family: inherit;
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 1.25rem;
+      padding: 0.5rem 1rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .btn:hover { filter: brightness(1.05); }
+    .errors { color: #b00020; font-size: 0.875rem; margin: 0.25rem 0 0; padding: 0; list-style: none; }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 0.35rem; }
+    form p { margin: 0; }
+    form ul.errorlist { margin: 0.25rem 0 0; padding-left: 1.1rem; color: #b00020; font-size: 0.85rem; }
+    input[type="checkbox"] { width: auto; margin-top: 0.5rem; }
+    select:disabled { opacity: 0.65; cursor: not-allowed; background: #f1f3f5; }
+
+    /* 管理端只读详情：现代详情卡片 */
+    .modern-detail-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+    }
+    .detail-back-link {
+      font-size: 0.9rem;
+      color: #64748b;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      margin-bottom: 1rem;
+    }
+    .detail-back-link:hover { color: #0d9488; }
+    .detail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .detail-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0;
+      line-height: 1.3;
+    }
+    .info-group { margin-bottom: 1.5rem; }
+    .info-label {
+      font-size: 0.85rem;
+      color: #64748b;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.3rem;
+      font-weight: 600;
+    }
+    .info-value {
+      font-size: 1.05rem;
+      color: #0f172a;
+      font-weight: 500;
+      word-break: break-word;
+    }
+    .info-value a { font-weight: 600; }
+    .content-block {
+      background-color: #f8fafc;
+      border-radius: 12px;
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+      margin-top: 0.5rem;
+      color: #334155;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .content-block--compact { font-size: 0.9rem; }
+    .badge-modern {
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    .badge-modern.badge-success {
+      background-color: #ecfdf5;
+      color: #10b981;
+      border: 1px solid #a7f3d0;
+    }
+    .badge-modern.badge-warning {
+      background-color: #fffbeb;
+      color: #f59e0b;
+      border: 1px solid #fde68a;
+    }
+    .badge-modern.badge-info {
+      background-color: #f0fdfa;
+      color: #0d9488;
+      border: 1px solid #99f6e4;
+    }
+    .badge-modern.badge-muted {
+      background-color: #f1f5f9;
+      color: #64748b;
+      border: 1px solid #e2e8f0;
+    }
+    .badge-modern.badge-danger {
+      background-color: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+    .modern-detail-table-wrap { overflow-x: auto; margin-top: 0.5rem; }
+    .modern-detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+    .modern-detail-table th,
+    .modern-detail-table td {
+      border: 1px solid #e2e8f0;
+      padding: 0.65rem 0.85rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    .modern-detail-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .modern-detail-table tbody tr:nth-child(even) { background: #fafafa; }
+    .detail-section-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #334155;
+      margin: 1.5rem 0 0.5rem;
+    }
+    .detail-section-title:first-of-type { margin-top: 0; }
+
+    .modern-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    /* 管理端列表：与患者档案等页统一的现代表格 */
+    .table-modern {
+      width: 100%;
+      margin-bottom: 0;
+    }
+    .table-modern > thead > tr > th {
+      background-color: transparent !important;
+      border-bottom: 2px solid #e2e8f0;
+      color: #475569;
+      font-weight: 600;
+      padding: 1rem;
+      border-top: none;
+    }
+    .table-modern > tbody > tr > td {
+      padding: 1rem;
+      vertical-align: middle;
+      border-bottom: 1px solid #f1f5f9;
+      color: #334155;
+    }
+    .table-modern.table-hover > tbody > tr {
+      transition: background-color 0.2s ease;
+    }
+    .table-modern.table-hover > tbody > tr:hover > td {
+      background-color: #f8fafc !important;
+      cursor: pointer;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "core/base.html" %}
+{% block title %}管理看板 — 护士长工作台{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide doc-dash-wrap{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .main-inner.doc-dash-wrap { max-width: 1200px; }
+  .doc-dash-hero { margin-bottom: 1.5rem; }
+  .doc-dash-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.35rem; color: #0f172a; letter-spacing: -0.02em; }
+  .doc-dash-hero p { margin: 0; font-size: 0.9rem; color: #64748b; }
+  .doc-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 1024px) { .doc-kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .doc-kpi-row { grid-template-columns: 1fr; } }
+  .doc-kpi {
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .doc-kpi::after {
+    content: "";
+    position: absolute;
+    right: -20%;
+    top: -40%;
+    width: 55%;
+    height: 140%;
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .doc-kpi__label { font-size: 0.78rem; font-weight: 600; opacity: 0.92; letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 0.4rem; position: relative; z-index: 1; }
+  .doc-kpi__val { font-size: 2rem; font-weight: 800; line-height: 1.1; margin: 0; position: relative; z-index: 1; letter-spacing: -0.03em; }
+  .doc-kpi__hint { font-size: 0.75rem; opacity: 0.88; margin: 0.5rem 0 0; line-height: 1.4; position: relative; z-index: 1; }
+  .doc-kpi--amber { background: linear-gradient(135deg, #d97706 0%, #f59e0b 55%, #fbbf24 100%); }
+  .doc-kpi--emerald { background: linear-gradient(135deg, #047857 0%, #10b981 55%, #34d399 100%); }
+  .doc-kpi--indigo { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%); }
+  .doc-kpi--rose { background: linear-gradient(135deg, #be123c 0%, #e11d48 50%, #fb7185 100%); }
+  .hn-links {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+  .hn-link-card {
+    display: block;
+    padding: 1.1rem 1.2rem;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    text-decoration: none;
+    color: #0f172a;
+    font-weight: 700;
+    transition: box-shadow 0.2s, transform 0.15s;
+  }
+  .hn-link-card:hover { box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1); transform: translateY(-2px); text-decoration: none; color: #2563eb; }
+  .hn-link-card span { display: block; font-size: 0.8rem; font-weight: 500; color: #64748b; margin-top: 0.35rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="doc-dash-hero">
+  <h1>管理看板</h1>
+  <p>{{ today }} · 护理管理与药品供应链概览</p>
+</div>
+
+<div class="doc-kpi-row">
+  <div class="doc-kpi doc-kpi--amber">
+    <p class="doc-kpi__label">待审批采购</p>
+    <p class="doc-kpi__val">{{ pending_purchase_count }}</p>
+    <p class="doc-kpi__hint">护士提交的采购申请待您处理</p>
+  </div>
+  <div class="doc-kpi doc-kpi--emerald">
+    <p class="doc-kpi__label">今日已审批</p>
+    <p class="doc-kpi__val">{{ today_reviewed_count }}</p>
+    <p class="doc-kpi__hint">今日完成审批的条数（通过或驳回）</p>
+  </div>
+  <div class="doc-kpi doc-kpi--indigo">
+    <p class="doc-kpi__label">药品种类</p>
+    <p class="doc-kpi__val">{{ drug_total_count }}</p>
+    <p class="doc-kpi__hint">药品字典中的品种总数</p>
+  </div>
+  <div class="doc-kpi doc-kpi--rose">
+    <p class="doc-kpi__label">库存预警</p>
+    <p class="doc-kpi__val">{{ drug_low_stock_count }}</p>
+    <p class="doc-kpi__hint">当前库存 &lt; 20 的品种数</p>
+  </div>
+</div>
+
+<div class="hn-links">
+  <a class="hn-link-card" href="{% url 'core:headnurse_drug_inventory' %}">药品库存盘点<span>查看全部药品与低库存预警</span></a>
+  <a class="hn-link-card" href="{% url 'core:admin_drug_list' %}">药品入库/补充<span>新增药品或调整库存与厂家</span></a>
+  <a class="hn-link-card" href="{% url 'core:manufacturer_list' %}">生产厂家管理<span>维护供应链厂家档案</span></a>
+  <a class="hn-link-card" href="{% url 'core:headnurse_purchase' %}">采购审批中心<span>待办审批与历史记录</span></a>
+</div>
+{% endblock %}

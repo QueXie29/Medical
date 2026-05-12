@@ -1,0 +1,739 @@
+{% extends "core/base.html" %}
+{% block title %}接诊 — {{ appointment.patient.real_name|default:appointment.patient.username }}{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide his-consult-wrap{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .main-inner.his-consult-wrap { max-width: 1440px; }
+
+  /* Flex 主布局：等高拉伸 */
+  .his-consult {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 1.5rem;
+    margin: 0;
+  }
+  @media (max-width: 992px) {
+    .his-consult { flex-direction: column; }
+  }
+
+  .his-consult__left {
+    flex: 0 0 34%;
+    max-width: 440px;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  @media (max-width: 992px) {
+    .his-consult__left { flex: none; max-width: none; width: 100%; }
+  }
+
+  .his-consult__left-stack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-height: 100%;
+  }
+
+  .his-consult__head { flex-shrink: 0; }
+  .his-back { font-size: 0.875rem; margin-bottom: 0.25rem; }
+  .his-back a { color: var(--accent); }
+  .his-page-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    margin: 0 0 0.2rem;
+    letter-spacing: -0.02em;
+    color: #0f172a;
+  }
+  .his-page-sub { font-size: 0.85rem; color: #64748b; margin: 0; line-height: 1.5; }
+
+  /* 与看板 doc-panel 一致的卡片 */
+  .his-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 0;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    overflow: hidden;
+  }
+  .his-panel__head {
+    padding: 0.85rem 1.2rem;
+    border-bottom: 2px solid #f1f5f9;
+    background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+  }
+  .his-panel__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin: 0;
+    color: #0f172a;
+  }
+  .his-panel__body { padding: 1.1rem 1.2rem 1.2rem; }
+
+  .his-panel--history {
+    flex: 1;
+    min-height: 12rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .his-panel--history .his-panel__body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0.85rem;
+  }
+
+  .his-patient-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.35rem;
+    line-height: 1.25;
+  }
+  .his-patient-meta {
+    font-size: 0.88rem;
+    color: #475569;
+    margin: 0.25rem 0;
+    line-height: 1.55;
+  }
+  .his-status-pill {
+    display: inline-block;
+    margin-top: 0.55rem;
+    padding: 0.22rem 0.6rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+
+  /* 体征网格 */
+  .his-vitals {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  @media (max-width: 400px) { .his-vitals { grid-template-columns: 1fr; } }
+
+  .his-vital-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.65rem 0.7rem;
+    background: #f8fafc;
+    border-radius: 12px;
+    border: 1px solid #e8ecf1;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .his-vital-item--warn { background: #fff1f2; border-color: #fecdd3; }
+  .his-vital-item--cool { background: #eff6ff; border-color: #bfdbfe; }
+  .his-vital-item--ok { background: #ecfdf5; border-color: #bbf7d0; }
+
+  .his-vital-ico {
+    flex-shrink: 0;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    background: #e0f2fe;
+  }
+  .his-vital-item--warn .his-vital-ico { background: #ffe4e6; }
+  .his-vital-item--cool .his-vital-ico { background: #dbeafe; }
+  .his-vital-item--ok .his-vital-ico { background: #d1fae5; }
+
+  .his-vital-lab {
+    font-size: 0.68rem;
+    color: #64748b;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .his-vital-val-row { margin-top: 0.2rem; line-height: 1.35; }
+  .his-vital-unit-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-left: 0.15rem;
+  }
+  .his-temp-high { color: #dc2626 !important; font-weight: 800; font-size: 1.15rem; }
+  .his-temp-low { color: #2563eb !important; font-weight: 800; font-size: 1.1rem; }
+  .his-temp-ok { color: #059669 !important; font-weight: 700; font-size: 1.08rem; }
+  .his-hr-abn { color: #dc2626 !important; font-weight: 800; font-size: 1.1rem; }
+  .his-hr-ok { color: #059669 !important; font-weight: 700; font-size: 1.08rem; }
+  .his-bp-value {
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: #1d4ed8;
+    letter-spacing: 0.02em;
+  }
+  .his-vital-item.his-bp--warn .his-bp-value { color: #dc2626; }
+  .his-vital-hint { font-size: 0.7rem; font-weight: 700; margin-top: 0.25rem; }
+
+  .his-vitals-empty {
+    margin-top: 0.9rem;
+    padding: 0.85rem;
+    border-radius: 12px;
+    background: #f1f5f9;
+    font-size: 0.84rem;
+    color: #64748b;
+    line-height: 1.6;
+  }
+  .his-vitals-time { font-size: 0.76rem; color: #94a3b8; margin-top: 0.75rem; margin-bottom: 0; }
+
+  /* AI 报告 */
+  .his-ai-block { margin-bottom: 1.15rem; }
+  .his-ai-block:last-child { margin-bottom: 0; }
+  .his-ai-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #64748b;
+    margin: 0 0 0.45rem;
+    letter-spacing: 0.03em;
+  }
+  .his-ai-text {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #334155;
+    white-space: pre-wrap;
+  }
+  .his-ai-summary {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    color: #475569;
+  }
+
+  .his-history-scroll { overflow-y: auto; flex: 1; padding-right: 0.2rem; margin-right: -0.15rem; }
+  .his-history-item {
+    background: #f8fafc;
+    border: 1px solid #e8ecf1;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.65rem;
+    font-size: 0.8rem;
+  }
+  .his-history-item:last-child { margin-bottom: 0; }
+  .his-history-meta { color: #64748b; font-size: 0.72rem; margin: 0 0 0.4rem; line-height: 1.45; }
+  .his-history-dx { margin: 0 0 0.4rem; color: #334155; line-height: 1.55; white-space: pre-wrap; }
+  .his-history-drugs { margin: 0; padding-left: 1rem; color: #475569; }
+  .his-history-drugs li { margin: 0.15rem 0; }
+  .his-history-empty { font-size: 0.82rem; color: #94a3b8; margin: 0; line-height: 1.6; }
+
+  /* 右侧：与看板一致的阴影卡片 + 拉伸 */
+  .his-consult__right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .his-work-sheet {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+    padding: 0 0 5.5rem;
+    min-height: 100%;
+  }
+  .his-work-sheet__inner { padding: 1.2rem 1.35rem 0; flex: 1; }
+
+  .his-section { margin-bottom: 1.6rem; }
+  .his-section:last-of-type { margin-bottom: 0; }
+  .his-section .his-panel__head {
+    margin: 0 0 1rem 0;
+    padding: 0 0 0.65rem 0;
+    border-bottom: 2px solid #f1f5f9;
+    background: none;
+  }
+  .his-section .his-panel__title { font-size: 1.08rem; }
+
+  .his-field-group { margin-bottom: 1.15rem; }
+  .his-field-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 0.4rem;
+  }
+  .his-textarea,
+  .his-work-sheet textarea.his-textarea {
+    width: 100%;
+    min-height: 9rem;
+    padding: 0.7rem 0.8rem;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    font-family: inherit;
+    resize: vertical;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    background: #fafafa;
+  }
+  .his-textarea:hover,
+  .his-work-sheet textarea.his-textarea:hover { border-color: #94a3b8; background: #fff; }
+  .his-textarea:focus,
+  .his-work-sheet textarea.his-textarea:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    background: #fff;
+  }
+
+  .his-rx-hint { font-size: 0.8rem; color: #64748b; margin: 0 0 0.85rem; line-height: 1.6; }
+  .his-rx-notes {
+    width: 100%;
+    min-height: 4rem;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 0.88rem;
+    margin-bottom: 1rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: #fafafa;
+  }
+  .his-rx-notes:hover { border-color: #94a3b8; background: #fff; }
+  .his-rx-notes:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18);
+    background: #fff;
+  }
+  .his-rx-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #fafafa;
+  }
+  .his-rx-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  .his-rx-table th {
+    text-align: left;
+    padding: 0.55rem 0.65rem;
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 600;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .his-rx-table td {
+    padding: 0.5rem 0.55rem;
+    border-bottom: 1px solid #e8ecf1;
+    vertical-align: middle;
+    background: #fff;
+  }
+  .his-rx-table tr:last-child td { border-bottom: none; }
+  .his-rx-table select,
+  .his-rx-table input[type="number"],
+  .his-rx-table input[type="text"] {
+    width: 100%;
+    max-width: 100%;
+    padding: 0.5rem 0.55rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 0.86rem;
+    font-family: inherit;
+    box-sizing: border-box;
+    background: #fafafa;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .his-rx-table select { min-height: 2.35rem; }
+  .his-rx-table select:hover,
+  .his-rx-table input:hover { border-color: #94a3b8; background: #fff; }
+  .his-rx-table select:focus,
+  .his-rx-table input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    background: #fff;
+  }
+
+  .his-action-bar {
+    position: sticky;
+    bottom: 0;
+    margin-top: auto;
+    padding: 1rem 1.35rem;
+    background: linear-gradient(to top, #fff 65%, rgba(255,255,255,0.94));
+    border-top: 1px solid #e2e8f0;
+    border-radius: 0 0 14px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    z-index: 5;
+    box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.06);
+  }
+  @media (max-width: 992px) {
+    .his-action-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: 0;
+      border-radius: 0;
+      padding: 0.75rem 1rem;
+      padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0));
+      box-shadow: 0 -4px 20px rgba(15, 23, 42, 0.12);
+    }
+    .his-work-sheet { padding-bottom: 5.5rem; }
+  }
+
+  .his-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: filter 0.15s, transform 0.05s;
+  }
+  .his-btn:active { transform: scale(0.98); }
+  .his-btn--primary {
+    background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+    color: #fff;
+    padding: 0.7rem 1.35rem;
+    font-size: 0.95rem;
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.35);
+  }
+  .his-btn--primary:hover { filter: brightness(1.05); }
+  .his-btn--blue {
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff;
+    padding: 0.65rem 1.2rem;
+    font-size: 0.92rem;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  }
+  .his-btn--blue:hover { filter: brightness(1.05); }
+  .his-btn--ghost {
+    background: #fff;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+  }
+  .his-btn--ghost:hover { background: #f8fafc; }
+
+  .his-readonly-block { margin-bottom: 1rem; }
+  .his-readonly-block h3 { font-size: 0.78rem; color: #64748b; margin: 0 0 0.35rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .his-readonly-block p { margin: 0; font-size: 0.9rem; line-height: 1.6; color: #334155; white-space: pre-wrap; }
+
+  .his-rx-done {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background: #fafafa;
+  }
+  .his-rx-done:last-child { margin-bottom: 0; }
+  .his-rx-done-meta { font-size: 0.78rem; color: #64748b; margin: 0 0 0.5rem; }
+  .his-rx-done ul { margin: 0; padding-left: 1.1rem; color: #334155; font-size: 0.86rem; }
+
+  .errors { color: #b91c1c; font-size: 0.8rem; margin: 0.25rem 0 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="his-consult">
+  <aside class="his-consult__left" aria-label="患者病情上下文">
+    <div class="his-consult__left-stack">
+      <section class="his-panel" aria-labelledby="his-patient-title">
+        <div class="his-panel__head">
+          <h2 class="his-panel__title" id="his-patient-title">患者基本信息与体征</h2>
+        </div>
+        <div class="his-panel__body">
+          <p class="his-patient-name">{{ appointment.patient.real_name|default:appointment.patient.username }}</p>
+          <p class="his-patient-meta">账号 {{ appointment.patient.username }}</p>
+          <p class="his-patient-meta"><strong>挂号科室</strong> {{ appointment.schedule.department.name }}</p>
+          <p class="his-patient-meta"><strong>出诊日期</strong> {{ appointment.schedule.work_date }} · {{ appointment.schedule.get_shift_display }}</p>
+          <p class="his-patient-meta"><strong>接诊医生</strong> 本人</p>
+          <span class="his-status-pill">{{ appointment.get_status_display }}</span>
+
+          {% if appointment.vital_sign %}
+          {% with vs=appointment.vital_sign %}
+          <div class="his-vitals" role="group" aria-label="分诊体征">
+            <div class="his-vital-item {% if vs.temperature > 37.3 %}his-vital-item--warn{% elif vs.temperature < 36 %}his-vital-item--cool{% else %}his-vital-item--ok{% endif %}">
+              <div class="his-vital-ico" aria-hidden="true">🌡</div>
+              <div>
+                <div class="his-vital-lab">体温</div>
+                <div class="his-vital-val-row">
+                  {% if vs.temperature > 37.3 %}
+                  <span class="his-temp-high">{{ vs.temperature }}</span><span class="his-vital-unit-label">℃</span>
+                  <div class="his-vital-hint" style="color:#dc2626;">偏高</div>
+                  {% elif vs.temperature < 36 %}
+                  <span class="his-temp-low">{{ vs.temperature }}</span><span class="his-vital-unit-label">℃</span>
+                  <div class="his-vital-hint" style="color:#2563eb;">偏低</div>
+                  {% else %}
+                  <span class="his-temp-ok">{{ vs.temperature }}</span><span class="his-vital-unit-label">℃</span>
+                  <div class="his-vital-hint" style="color:#059669;">正常范围</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="his-vital-item {% if vs.blood_pressure and '高' in vs.blood_pressure %}his-vital-item--warn{% endif %}" id="his-bp-cell" data-bp="{{ vs.blood_pressure|default:''|escape }}">
+              <div class="his-vital-ico" aria-hidden="true">🩺</div>
+              <div>
+                <div class="his-vital-lab">血压</div>
+                <div class="his-vital-val-row">
+                  <span class="his-bp-value">{{ vs.blood_pressure }}</span><span class="his-vital-unit-label">mmHg</span>
+                  {% if vs.blood_pressure and '高' in vs.blood_pressure %}
+                  <div class="his-vital-hint" style="color:#dc2626;">含「高」提示</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            <div class="his-vital-item {% if vs.heart_rate > 100 or vs.heart_rate < 60 %}his-vital-item--warn{% else %}his-vital-item--ok{% endif %}">
+              <div class="his-vital-ico" aria-hidden="true">♥</div>
+              <div>
+                <div class="his-vital-lab">心率</div>
+                <div class="his-vital-val-row">
+                  {% if vs.heart_rate > 100 or vs.heart_rate < 60 %}
+                  <span class="his-hr-abn">{{ vs.heart_rate }}</span><span class="his-vital-unit-label">bpm</span>
+                  <div class="his-vital-hint" style="color:#dc2626;">{% if vs.heart_rate > 100 %}偏快{% else %}偏慢{% endif %}</div>
+                  {% else %}
+                  <span class="his-hr-ok">{{ vs.heart_rate }}</span><span class="his-vital-unit-label">bpm</span>
+                  <div class="his-vital-hint" style="color:#059669;">正常范围</div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="his-vitals-time">分诊录入 {{ vs.recorded_at|date:"Y-m-d H:i" }}</p>
+          {% endwith %}
+          {% else %}
+          <div class="his-vitals-empty">暂无体征数据：护士尚未在分诊台录入，接诊时请结合问诊与查体。</div>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="his-panel" aria-labelledby="his-ai-title">
+        <div class="his-panel__head">
+          <h2 class="his-panel__title" id="his-ai-title">AI 预问诊报告</h2>
+        </div>
+        <div class="his-panel__body">
+          {% if ai_report %}
+            {% if ai_report.structured_content %}
+            <div class="his-ai-block">
+              <p class="his-ai-label">主诉</p>
+              <p class="his-ai-text">{{ ai_report.structured_content.chief_complaint|default:"—" }}</p>
+            </div>
+            <div class="his-ai-block">
+              <p class="his-ai-label">现病史</p>
+              <p class="his-ai-text">{{ ai_report.structured_content.present_illness|default:"—" }}</p>
+            </div>
+            {% endif %}
+            {% if ai_report.summary %}
+            <div class="his-ai-block">
+              <p class="his-ai-label">报告摘要</p>
+              <div class="his-ai-summary">{{ ai_report.summary|linebreaksbr }}</div>
+            </div>
+            {% endif %}
+            {% if not ai_report.structured_content and not ai_report.summary %}
+            <p class="his-ai-text" style="color:#94a3b8;">报告内容为空。</p>
+            {% endif %}
+          {% else %}
+            <p class="his-ai-text" style="color:#94a3b8;">患者未关联 AI 预问诊报告。</p>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="his-panel his-panel--history" aria-labelledby="his-hist-title">
+        <div class="his-panel__head">
+          <h2 class="his-panel__title" id="his-hist-title">患者历史就诊</h2>
+        </div>
+        <div class="his-panel__body">
+          <div class="his-history-scroll">
+            {% if patient_history_records %}
+              {% for rec in patient_history_records %}
+              <article class="his-history-item">
+                <p class="his-history-meta">
+                  {{ rec.appointment.schedule.work_date }} {{ rec.appointment.schedule.get_shift_display }}
+                  · {{ rec.doctor.real_name|default:rec.doctor.username }}
+                  · {{ rec.created_at|date:"Y-m-d H:i" }}
+                </p>
+                <p class="his-history-dx"><strong>诊断</strong> {{ rec.diagnosis|truncatechars:220 }}</p>
+                {% if rec.prescriptions.all %}
+                <ul class="his-history-drugs">
+                  {% for pr in rec.prescriptions.all %}
+                    {% for line in pr.lines.all %}
+                    <li>{{ line.drug.name }} × {{ line.quantity }}{% if line.dosage_instruction %} — {{ line.dosage_instruction }}{% endif %}</li>
+                    {% empty %}
+                    <li>（处方 #{{ pr.pk }} 无明细）</li>
+                    {% endfor %}
+                  {% endfor %}
+                </ul>
+                {% else %}
+                <p class="his-history-meta" style="margin:0;">当次未开处方</p>
+                {% endif %}
+              </article>
+              {% endfor %}
+            {% else %}
+              <p class="his-history-empty">暂无更早电子病历记录。</p>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+    </div>
+  </aside>
+
+  <main class="his-consult__right" aria-label="诊疗操作">
+    <div class="his-work-sheet">
+      <div class="his-work-sheet__inner">
+        {% if can_edit %}
+        <section class="his-section">
+          <div class="his-panel__head">
+            <h2 class="his-panel__title">诊断与病历</h2>
+          </div>
+          <form id="his-form-record" method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="submit_record" value="1">
+            {% for field in record_form %}
+            <div class="his-field-group">
+              <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.errors %}<ul class="errors">{{ field.errors }}</ul>{% endif %}
+            </div>
+            {% endfor %}
+          </form>
+        </section>
+
+        {% if medical_record %}
+        <section class="his-section">
+          <div class="his-panel__head">
+            <h2 class="his-panel__title">处方开具</h2>
+          </div>
+          <p class="his-rx-hint">至少完整填写一行：药品、数量、用法用量。提交后将标记就诊完成并转护士发药。</p>
+          <form id="his-form-rx" method="post" action="">
+            {% csrf_token %}
+            <input type="hidden" name="submit_prescription" value="1">
+            <label class="his-ai-label" for="id_prescription_notes" style="display:block;margin-bottom:0.35rem;">医嘱说明（选填）</label>
+            <textarea class="his-rx-notes" name="prescription_notes" id="id_prescription_notes" rows="4" placeholder="合并用药说明、禁忌提示等"></textarea>
+            {{ line_formset.management_form }}
+            <div class="his-rx-table-wrap">
+              <table class="his-rx-table">
+                <thead>
+                  <tr>
+                    <th style="width:38%;">药品</th>
+                    <th style="width:14%;">数量</th>
+                    <th style="width:48%;">用法用量</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for f in line_formset %}
+                  <tr>
+                    <td>{{ f.drug }} {% if f.drug.errors %}<ul class="errors">{{ f.drug.errors }}</ul>{% endif %}</td>
+                    <td>{{ f.quantity }} {% if f.quantity.errors %}<ul class="errors">{{ f.quantity.errors }}</ul>{% endif %}</td>
+                    <td>{{ f.dosage_instruction }} {% if f.dosage_instruction.errors %}<ul class="errors">{{ f.dosage_instruction.errors }}</ul>{% endif %}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          </form>
+          <form id="his-form-complete" method="post" action="" style="display:none;">
+            {% csrf_token %}
+            <input type="hidden" name="submit_complete_visit" value="1">
+          </form>
+        </section>
+        {% endif %}
+
+        {% else %}
+        <section class="his-section">
+          <div class="his-panel__head">
+            <h2 class="his-panel__title">病历查阅（只读）</h2>
+          </div>
+          <p class="his-rx-hint">该预约已结束或已取消，不可再编辑。</p>
+          {% if medical_record %}
+          <div class="his-readonly-block">
+            <h3>主诉</h3>
+            <p>{{ medical_record.chief_complaint|linebreaksbr }}</p>
+          </div>
+          <div class="his-readonly-block">
+            <h3>现病史</h3>
+            <p>{{ medical_record.present_illness|default:"—"|linebreaksbr }}</p>
+          </div>
+          <div class="his-readonly-block">
+            <h3>诊断</h3>
+            <p>{{ medical_record.diagnosis|linebreaksbr }}</p>
+          </div>
+          <div class="his-readonly-block">
+            <h3>处理意见</h3>
+            <p>{{ medical_record.treatment_plan|default:"—"|linebreaksbr }}</p>
+          </div>
+          {% else %}
+          <p class="his-rx-hint">暂无电子病历。</p>
+          {% endif %}
+        </section>
+
+        {% if prescriptions %}
+        <section class="his-section">
+          <div class="his-panel__head">
+            <h2 class="his-panel__title">已开处方（本次）</h2>
+          </div>
+          {% for p in prescriptions %}
+          <div class="his-rx-done">
+            <p class="his-rx-done-meta">#{{ p.pk }} · {{ p.get_status_display }} · {{ p.created_at|date:"Y-m-d H:i" }}</p>
+            <ul>
+              {% for line in p.lines.all %}
+              <li>{{ line.drug.name }} × {{ line.quantity }} — {{ line.dosage_instruction }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endfor %}
+        </section>
+        {% endif %}
+        {% endif %}
+      </div>
+
+      {% if can_edit %}
+      <div class="his-action-bar" role="toolbar" aria-label="提交操作">
+        {% if medical_record %}
+        <button type="submit" class="his-btn his-btn--ghost" form="his-form-complete">不开处方，结束就诊</button>
+        <button type="submit" class="his-btn his-btn--blue" form="his-form-record">保存病历</button>
+        <button type="submit" class="his-btn his-btn--primary" form="his-form-rx" name="submit_prescription" value="1">签署处方并完成接诊</button>
+        {% else %}
+        <button type="submit" class="his-btn his-btn--primary" form="his-form-record">保存病历</button>
+        {% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var cell = document.getElementById("his-bp-cell");
+  if (!cell) return;
+  var raw = cell.getAttribute("data-bp") || "";
+  var normalized = raw.replace(/，/g, "/").trim();
+  var m = normalized.match(/^\s*(\d{2,3})\s*\/\s*(\d{2,3})/);
+  if (!m) return;
+  var sys = parseInt(m[1], 10);
+  var dia = parseInt(m[2], 10);
+  if (sys >= 140 || dia >= 90) {
+    cell.classList.add("his-bp--warn", "his-vital-item--warn");
+    if (cell.querySelector(".his-bp-js-hint")) return;
+    var hint = document.createElement("div");
+    hint.className = "his-vital-hint his-bp-js-hint";
+    hint.style.color = "#dc2626";
+    hint.textContent = "数值提示：≥140/90 mmHg";
+    var row = cell.querySelector(".his-vital-val-row");
+    if (row) row.appendChild(hint);
+  }
+})();
+</script>
+{% endblock %}

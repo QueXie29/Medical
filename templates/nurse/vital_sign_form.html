@@ -1,0 +1,102 @@
+{% extends "core/base.html" %}
+{% block title %}{% if is_update %}修改{% else %}录入{% endif %}体征 — 门诊分诊台{% endblock %}
+{% block main_inner_class %}main-inner nr-vital-page{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .main-inner.nr-vital-page { max-width: 520px; margin-left: auto; margin-right: auto; }
+  .nr-vital-shell { padding: 0.25rem 0 1.5rem; }
+  .nr-vital-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+    overflow: hidden;
+  }
+  .nr-vital-panel__head {
+    padding: 1.1rem 1.35rem;
+    border-bottom: 2px solid #f1f5f9;
+    background: linear-gradient(180deg, #fafbfc 0%, #fff 100%);
+  }
+  .nr-vital-panel__head h1 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    margin: 0 0 0.35rem;
+    color: #0f172a;
+  }
+  .nr-vital-panel__body { padding: 1.25rem 1.35rem 1.4rem; }
+  .nr-vital-back { font-size: 0.86rem; margin-bottom: 0.65rem; }
+  .nr-vital-back a { color: var(--accent); font-weight: 600; }
+  .nr-vital-patient { font-size: 0.95rem; color: #334155; margin: 0 0 0.35rem; }
+  .nr-vital-meta { font-size: 0.82rem; color: #64748b; margin: 0 0 1rem; line-height: 1.5; }
+
+  .nr-vital-field { margin-bottom: 1.15rem; }
+  .nr-vital-field label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 0.4rem;
+  }
+  .nr-vital-input {
+    width: 100%;
+    padding: 0.75rem 0.85rem;
+    font-size: 1.05rem;
+    line-height: 1.45;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    font-family: inherit;
+    box-sizing: border-box;
+    background: #fafafa;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  .nr-vital-input:hover { border-color: #94a3b8; background: #fff; }
+  .nr-vital-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    background: #fff;
+  }
+  .nr-vital-submit {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+    color: #fff;
+    box-shadow: 0 3px 14px rgba(37, 99, 235, 0.35);
+  }
+  .nr-vital-submit:hover { filter: brightness(1.05); }
+  .errors { color: #b91c1c; font-size: 0.82rem; margin: 0.35rem 0 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="nr-vital-shell">
+  <div class="nr-vital-panel">
+    <div class="nr-vital-panel__head">
+      <p class="nr-vital-back"><a href="{% url 'core:nurse_triage_list' %}">← 返回分诊台</a></p>
+      <h1>{% if is_update %}修改{% else %}录入{% endif %}基础体征</h1>
+    </div>
+    <div class="nr-vital-panel__body">
+      <p class="nr-vital-patient"><strong>患者</strong> {{ appointment.patient.real_name|default:appointment.patient.username }}（{{ appointment.patient.username }}）</p>
+      <p class="nr-vital-meta">{{ appointment.schedule.department.name }} · {{ appointment.schedule.doctor.real_name|default:appointment.schedule.doctor.username }} · {{ appointment.schedule.get_shift_display }}</p>
+      <form method="post" action="">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="nr-vital-field">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<ul class="errors">{{ field.errors }}</ul>{% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="nr-vital-submit">保存体征</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

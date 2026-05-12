@@ -1,0 +1,70 @@
+{% extends "core/base.html" %}
+{% block title %}我的预问诊报告 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .table-wrap { overflow-x: auto; margin-top: 1rem; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+    .data-table th, .data-table td { border: 1px solid var(--border); padding: 0.55rem 0.65rem; text-align: left; vertical-align: top; }
+    .data-table th { background: #f1f3f5; }
+    .badge { display: inline-block; font-size: 0.72rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: #e7f1ff; color: #084298; }
+    .badge--muted { background: #f1f3f5; color: var(--muted); }
+    .pagination { margin-top: 1rem; font-size: 0.875rem; }
+    .pagination a { margin-right: 0.5rem; }
+    .row-actions a { margin-right: 0.65rem; white-space: nowrap; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>我的预问诊报告</h1>
+  <p class="hint">由 AI 预问诊生成；<strong>已用于挂号的报告不可删除</strong>。标题中的关键词与时间便于您在预约时辨认。</p>
+  <p><a href="{% url 'core:patient_ai_triage' %}">去 AI 预问诊</a> · <a href="{% url 'core:patient_appointment_list' %}">我的挂号</a></p>
+  {% if reports %}
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>标题</th>
+          <th>生成时间</th>
+          <th>状态</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in reports %}
+        <tr>
+          <td><strong>{{ r.title|default:"（无标题）" }}</strong></td>
+          <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
+          <td>
+            {% if r.appt_count %}
+              <span class="badge">已关联挂号</span>
+            {% else %}
+              <span class="badge badge--muted">未使用</span>
+            {% endif %}
+          </td>
+          <td class="row-actions">
+            <a href="{% url 'core:patient_ai_report_detail' pk=r.pk %}">查看详情</a>
+            {% if r.appt_count %}
+              <span class="hint" title="已关联挂号，不可删除">不可删除</span>
+            {% else %}
+              <a href="{% url 'core:patient_ai_report_delete' pk=r.pk %}">删除</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if is_paginated %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">上一页</a>{% endif %}
+    <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">下一页</a>{% endif %}
+  </div>
+  {% endif %}
+  {% else %}
+  <p class="hint" style="margin-top:1rem;">暂无报告，请先完成一次 AI 预问诊并生成报告。</p>
+  {% endif %}
+</div>
+{% endblock %}

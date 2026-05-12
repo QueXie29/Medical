@@ -1,0 +1,26 @@
+{% extends "core/base.html" %}
+{% block title %}修改员工信息 — 智慧医疗{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>修改员工信息</h1>
+  <p class="hint">
+    用户 <strong>{{ employee.username }}</strong> · {{ employee.get_role_display }}
+    {% if employee.role != 'doctor' %}（非主治医生不维护所属科室）{% endif %}
+  </p>
+  <form method="post" action="">
+    {% csrf_token %}
+    {% for field in form %}
+      <p>
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}
+        <span class="hint" style="display:block;margin-top:0.35rem;">{{ field.help_text }}</span>
+        {% endif %}
+        {{ field.errors }}
+      </p>
+    {% endfor %}
+    <button type="submit" class="btn">保存</button>
+  </form>
+  <p class="hint" style="margin-top:1rem;"><a href="{% url 'core:admin_staff_list' %}">返回员工列表</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "core/base.html" %}
+{% block title %}医院门户配置 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12 col-xl-10">
+      <div class="modern-card p-4 mb-4">
+        <h4 class="mb-3 text-dark fw-bold border-bottom pb-3"><i class="fas fa-sliders-h text-primary me-2"></i>医院门户全局配置</h4>
+        <p class="text-muted small mb-4">患者端大厅标题与背景图；全局单例，保存后对所有患者生效。</p>
+        <form method="post" action="" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div class="row g-4 mb-4">
+            {% for field in form %}
+            <div class="col-12">
+              <label class="form-label mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {% if field.name == 'hero_image' and object.hero_image %}
+                <span class="hint d-block mt-1">当前：<a href="{{ object.hero_image.url }}" target="_blank" rel="noopener">查看图片</a></span>
+              {% endif %}
+              {{ field.errors }}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="text-end">
+            <button type="submit" class="btn btn-primary px-5 rounded-pill text-white" style="background-color: #0d9488; border: none;">保存门户配置</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

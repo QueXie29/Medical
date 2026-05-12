@@ -1,0 +1,11 @@
+{% if a.status == 'pending' %}
+<span class="doc-st doc-st--pending" title="请尽快接诊"><span class="doc-st__pulse" aria-hidden="true"></span>{{ a.get_status_display }}</span>
+{% elif a.status == 'completed' %}
+<span class="doc-st doc-st--done">{{ a.get_status_display }}</span>
+{% elif a.status == 'in_progress' %}
+<span class="doc-st doc-st--progress">{{ a.get_status_display }}</span>
+{% elif a.status == 'confirmed' %}
+<span class="doc-st doc-st--confirmed">{{ a.get_status_display }}</span>
+{% else %}
+<span class="doc-st doc-st--muted">{{ a.get_status_display }}</span>
+{% endif %}

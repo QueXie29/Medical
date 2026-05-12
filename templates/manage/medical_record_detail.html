@@ -1,0 +1,67 @@
+{% extends "core/base.html" %}
+{% block title %}病历 #{{ record.pk }} — 管理{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <a href="{% url 'core:admin_medical_record_list' %}" class="detail-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 返回列表</a>
+
+  <div class="modern-detail-card">
+    <div class="detail-header">
+      <h1 class="detail-title">电子病历 #{{ record.pk }}</h1>
+      <span class="badge-modern badge-info">电子病历</span>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">患者</div>
+          <div class="info-value">{{ record.patient.real_name|default:record.patient.username }}（{{ record.patient.username }}）</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">接诊医生</div>
+          <div class="info-value">{{ record.doctor.real_name|default:record.doctor.username }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">关联挂号</div>
+          <div class="info-value"><a href="{% url 'core:admin_appointment_detail' pk=record.appointment.pk %}">#{{ record.appointment.pk }}</a></div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">创建时间</div>
+          <div class="info-value">{{ record.created_at|date:"Y-m-d H:i" }}</div>
+        </div>
+      </div>
+      <div class="col-md-8 col-sm-12">
+        <div class="info-group mb-0">
+          <div class="info-label">关联处方</div>
+          <div class="info-value"><a href="{% url 'core:admin_prescription_list' %}?mr={{ record.pk }}">在处方列表中筛选本病历（mr={{ record.pk }}）</a></div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4" style="border-color:#e2e8f0;">
+
+    <div class="mb-4">
+      <div class="info-label">主诉</div>
+      <div class="content-block">{{ record.chief_complaint }}</div>
+    </div>
+    <div class="mb-4">
+      <div class="info-label">现病史</div>
+      <div class="content-block">{{ record.present_illness|default:"—" }}</div>
+    </div>
+    <div class="mb-4">
+      <div class="info-label">诊断</div>
+      <div class="content-block">{{ record.diagnosis }}</div>
+    </div>
+    <div class="mb-0">
+      <div class="info-label">处理意见</div>
+      <div class="content-block">{{ record.treatment_plan|default:"—" }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "core/base.html" %}
+{% block title %}科室维护 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .actions a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>科室维护</h1>
+  <p><a href="{% url 'core:admin_department_create' %}" class="btn" style="margin-top:0;">新建科室</a></p>
+  {% if departments %}
+  <div class="table-responsive" style="margin-top:1rem;">
+    <table class="table table-hover table-modern align-middle">
+      <thead>
+        <tr>
+          <th>名称</th>
+          <th>编码</th>
+          <th>启用</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in departments %}
+        <tr>
+          <td>{{ d.name }}</td>
+          <td>{{ d.code|default:"—" }}</td>
+          <td>{% if d.is_active %}是{% else %}否{% endif %}</td>
+          <td class="actions">
+            <a href="{% url 'core:admin_department_edit' pk=d.pk %}">编辑</a>
+            <a href="{% url 'core:admin_department_delete' pk=d.pk %}">删除</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="hint">暂无科室，请先新建。</p>
+  {% endif %}
+</div>
+{% endblock %}

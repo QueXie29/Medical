@@ -1,0 +1,73 @@
+{% extends "core/base.html" %}
+{% block title %}预约挂号 — 管理{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .list-pagination { font-size: 0.875rem; }
+  .list-pagination a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="modern-card p-4">
+    <div class="mb-3">
+      <h5 class="mb-1 text-dark">预约挂号</h5>
+      <p class="text-muted small mb-0">全院挂号记录（只读查阅）。</p>
+    </div>
+
+    <hr class="text-secondary opacity-25 mb-4">
+
+    {% if appointments %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>患者</th>
+            <th>科室 / 医生 / 出诊</th>
+            <th>状态</th>
+            <th>创建时间</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in appointments %}
+          <tr>
+            <td>#{{ a.pk }}</td>
+            <td>{{ a.patient.real_name|default:a.patient.username }}</td>
+            <td>
+              {{ a.schedule.department.name }}<br>
+              <span class="text-muted small">{{ a.schedule.doctor.real_name|default:a.schedule.doctor.username }} · {{ a.schedule.work_date }} {{ a.schedule.get_shift_display }}</span>
+            </td>
+            <td>
+              {% if a.status == 'completed' %}
+              <span class="badge-modern badge-success">{{ a.get_status_display }}</span>
+              {% elif a.status == 'cancelled' %}
+              <span class="badge-modern badge-danger">{{ a.get_status_display }}</span>
+              {% elif a.status == 'in_progress' %}
+              <span class="badge-modern badge-warning">{{ a.get_status_display }}</span>
+              {% else %}
+              <span class="badge-modern badge-info">{{ a.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ a.created_at|date:"Y-m-d H:i" }}</td>
+            <td><a href="{% url 'core:admin_appointment_detail' pk=a.pk %}">详情</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+    <div class="list-pagination pt-3 mt-3 border-top">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">上一页</a>{% endif %}
+      <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">下一页</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="hint mb-0">暂无记录。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

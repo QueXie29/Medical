@@ -1,0 +1,133 @@
+{% extends "core/base.html" %}
+{% block title %}发布排班 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12 col-xl-10">
+      <div class="modern-card p-4 mb-4">
+        <h4 class="mb-3 text-dark fw-bold border-bottom pb-3"><i class="fas fa-calendar-plus text-primary me-2"></i>发布医护排班</h4>
+        <p class="text-muted small mb-4">请先选择<strong>所属科室</strong>，系统将加载该科室下已维护「所属科室」的主治医生；再选择出诊日期与班次。同一医生在同科室、同日、同班次不可重复。</p>
+        <form method="post" action="" id="schedule-publish-form" data-initial-doctor="{{ form.doctor.value|default:'' }}">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+          <div class="row mb-3">
+            <div class="col-12">
+              <ul class="errorlist mb-0">{{ form.non_field_errors }}</ul>
+            </div>
+          </div>
+          {% endif %}
+          <div class="row g-4 mb-4">
+            {% for field in form %}
+            <div class="col-md-6">
+              <label class="form-label mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {{ field.errors }}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="text-end">
+            <button type="submit" class="btn btn-primary px-5 rounded-pill text-white" style="background-color: #0d9488; border: none;">确认发布排班</button>
+          </div>
+        </form>
+        <p class="hint mt-3 mb-0"><a href="{% url 'core:admin_schedule_list' %}">查看排班列表</a></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var feeInput = document.querySelector(
+    'input[name*="fee"], input[name*="price"], input[name*="amount"]'
+  );
+  if (feeInput) {
+    feeInput.setAttribute("type", "number");
+    feeInput.setAttribute("step", "1");
+    feeInput.setAttribute("min", "0");
+    var currentValue = parseFloat(feeInput.value);
+    if (isNaN(currentValue) || currentValue === 0) {
+      feeInput.value = "20";
+    }
+  } else {
+    console.warn(
+      "【前端架构师提示】：未匹配到挂号费用的 input 元素，请检查表单生成的 name 属性。"
+    );
+  }
+
+  var apiUrl = "{% url 'core:api_doctors_by_department' %}";
+  var deptEl = document.getElementById("id_schedule_department");
+  var docEl = document.getElementById("id_schedule_doctor");
+  var form = document.getElementById("schedule-publish-form");
+  if (!deptEl || !docEl || !form) return;
+
+  var initialDoctor = form.getAttribute("data-initial-doctor") || "";
+
+  function setDoctorPlaceholder(text, disabled) {
+    docEl.innerHTML = "";
+    var o = document.createElement("option");
+    o.value = "";
+    o.textContent = text;
+    docEl.appendChild(o);
+    docEl.disabled = !!disabled;
+  }
+
+  function loadDoctors(deptId, selectIdAfter) {
+    if (!deptId) {
+      setDoctorPlaceholder("请先选择科室", true);
+      return;
+    }
+    docEl.disabled = true;
+    setDoctorPlaceholder("加载中…", true);
+    fetch(apiUrl + "?department_id=" + encodeURIComponent(deptId), {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error("network");
+        return r.json();
+      })
+      .then(function (data) {
+        var list = data && data.doctors ? data.doctors : [];
+        docEl.innerHTML = "";
+        if (!list.length) {
+          setDoctorPlaceholder("该科室暂无归属医生，请先在员工信息中维护", true);
+          return;
+        }
+        docEl.disabled = false;
+        var o0 = document.createElement("option");
+        o0.value = "";
+        o0.textContent = "请选择医生";
+        docEl.appendChild(o0);
+        list.forEach(function (d) {
+          var op = document.createElement("option");
+          op.value = String(d.id);
+          op.textContent = d.real_name || "#" + d.id;
+          docEl.appendChild(op);
+        });
+        if (selectIdAfter) {
+          docEl.value = String(selectIdAfter);
+          if (docEl.value !== String(selectIdAfter)) {
+            docEl.value = "";
+          }
+        }
+      })
+      .catch(function () {
+        setDoctorPlaceholder("加载失败，请刷新页面重试", true);
+      });
+  }
+
+  deptEl.addEventListener("change", function () {
+    loadDoctors(deptEl.value, "");
+  });
+
+  if (deptEl.value) {
+    loadDoctors(deptEl.value, initialDoctor);
+  } else {
+    setDoctorPlaceholder("请先选择科室", true);
+  }
+});
+</script>
+{% endblock %}

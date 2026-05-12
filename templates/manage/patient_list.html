@@ -1,0 +1,63 @@
+{% extends "core/base.html" %}
+{% block title %}患者档案管理 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .pl-empty { padding: 2rem; text-align: center; color: #94a3b8; }
+  .pl-pagination { font-size: 0.875rem; }
+  .pl-pagination a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="modern-card p-4">
+    <div class="mb-3">
+      <h5 class="mb-1 text-dark">患者档案管理</h5>
+      <p class="text-muted small mb-0">查看全院注册患者账号与基础信息，点击行内链接进入全景档案。</p>
+    </div>
+
+    <hr class="text-secondary opacity-25 mb-4">
+
+    {% if patients %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle">
+        <thead>
+          <tr>
+            <th>用户名</th>
+            <th>姓名</th>
+            <th>联系方式</th>
+            <th>性别</th>
+            <th>年龄</th>
+            <th>注册时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in patients %}
+          <tr>
+            <td>{{ p.username }}</td>
+            <td>{{ p.real_name|default:"—" }}</td>
+            <td>{{ p.phone|default:"—" }}</td>
+            <td>{% if p.gender %}{{ p.get_gender_display }}{% else %}—{% endif %}</td>
+            <td>{% if p.age %}{{ p.age }}{% else %}—{% endif %}</td>
+            <td>{{ p.date_joined|date:"Y-m-d H:i" }}</td>
+            <td><a href="{% url 'core:admin_patient_detail' pk=p.pk %}">全景档案</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+    <div class="pl-pagination pt-3 mt-3 border-top">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">上一页</a>{% endif %}
+      <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">下一页</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="pl-empty">暂无患者账号。</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

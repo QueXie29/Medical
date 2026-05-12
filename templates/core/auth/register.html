@@ -1,0 +1,116 @@
+{% extends "core/base.html" %}
+
+{% block title %}患者注册 — 智慧医疗{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>患者注册</h1>
+  <p class="hint">本平台仅开放患者自助注册；医护人员账号由管理员在后台创建。注册邮箱需完成验证码校验。</p>
+  <form method="post" action="" id="registerForm">
+    {% csrf_token %}
+    {% for field in form %}
+      {% if field.name == "email" %}
+      <p>
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </p>
+      <div class="d-flex gap-2 align-items-start flex-wrap mb-3">
+        <div class="flex-grow-1" style="min-width: 8rem;">
+          <label for="{{ form.verify_code.id_for_label }}" class="d-block">{{ form.verify_code.label }}</label>
+          {{ form.verify_code }}
+          {{ form.verify_code.errors }}
+        </div>
+        <div class="d-flex align-items-end pt-4">
+          <button type="button" id="sendCodeBtn" class="btn btn-outline-primary text-nowrap">获取验证码</button>
+        </div>
+      </div>
+      {% elif field.name == "verify_code" %}
+      {% else %}
+      <p>
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {{ field.errors }}
+      </p>
+      {% endif %}
+    {% endfor %}
+    <button type="submit" class="btn">注册</button>
+  </form>
+  <p class="hint" style="margin-top:1rem;">已有账号？<a href="{% url 'core:login' %}">去登录</a></p>
+</div>
+
+<script>
+(function () {
+  var btn = document.getElementById("sendCodeBtn");
+  var form = document.getElementById("registerForm");
+  if (!btn || !form) return;
+
+  var emailInput = document.getElementById("id_register_email") || form.querySelector('[name="email"]');
+  var countdownTimer = null;
+
+  function getCsrfToken() {
+    var input = form.querySelector("[name=csrfmiddlewaretoken]");
+    return input ? input.value : "";
+  }
+
+  function clearCountdown() {
+    if (countdownTimer) {
+      clearInterval(countdownTimer);
+      countdownTimer = null;
+    }
+  }
+
+  btn.addEventListener("click", function () {
+    var email = (emailInput && emailInput.value || "").trim();
+    if (!email) {
+      window.alert("请先填写邮箱");
+      return;
+    }
+    if (btn.disabled) return;
+
+    btn.disabled = true;
+    clearCountdown();
+
+    var fd = new FormData();
+    fd.append("email", email);
+    fd.append("action", "register");
+    fd.append("csrfmiddlewaretoken", getCsrfToken());
+
+    fetch("{% url 'core:send_email_verify_code' %}", {
+      method: "POST",
+      body: fd,
+      credentials: "same-origin",
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    })
+      .then(function (r) {
+        return r.json().then(function (data) {
+          return { ok: r.ok, status: r.status, data: data };
+        });
+      })
+      .then(function (res) {
+        if (!res.ok || res.data.status !== "success") {
+          window.alert(res.data.msg || "发送失败");
+          btn.disabled = false;
+          return;
+        }
+        var sec = 60;
+        btn.textContent = sec + "秒后重试";
+        countdownTimer = setInterval(function () {
+          sec -= 1;
+          if (sec <= 0) {
+            clearCountdown();
+            btn.disabled = false;
+            btn.textContent = "获取验证码";
+          } else {
+            btn.textContent = sec + "秒后重试";
+          }
+        }, 1000);
+      })
+      .catch(function () {
+        window.alert("网络错误，请稍后重试");
+        btn.disabled = false;
+      });
+  });
+})();
+</script>
+{% endblock %}

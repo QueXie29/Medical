@@ -1,0 +1,13 @@
+{% extends "core/base.html" %}
+{% block title %}删除员工 — 智慧医疗{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>确认删除员工</h1>
+  <p>将永久删除账号 <strong>{{ employee.username }}</strong>（{{ employee.get_role_display }}）。若存在接诊记录等关联将无法删除。</p>
+  <form method="post" action="">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background:#b00020;">确认删除</button>
+  </form>
+  <p class="hint" style="margin-top:1rem;"><a href="{% url 'core:admin_staff_list' %}">返回员工列表</a></p>
+</div>
+{% endblock %}

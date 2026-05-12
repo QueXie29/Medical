@@ -1,0 +1,50 @@
+{% extends "base_patient.html" %}
+{% block title %}确认挂号 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 640px;">
+  <h1 class="h3 fw-bold mb-3">确认挂号</h1>
+  <div class="card border-0 shadow-sm rounded-3 mb-4">
+    <div class="card-body">
+      <p class="mb-2"><strong>科室：</strong>{{ schedule.department.name }}</p>
+      <p class="mb-2"><strong>医生：</strong>{{ schedule.doctor.real_name|default:schedule.doctor.username }}{% if schedule.doctor.department %}（{{ schedule.doctor.department.name }}）{% endif %}</p>
+      <p class="mb-2"><strong>日期：</strong>{{ schedule.work_date }} · {{ schedule.get_shift_display }}</p>
+      <p class="mb-2"><strong>挂号费用：</strong><span class="text-warning fw-bold">￥{{ schedule_price }}</span></p>
+      <p class="mb-2"><strong>我的余额：</strong>￥{{ request.user.balance|floatformat:2 }}{% if not balance_sufficient %} <span class="text-danger small">（不足）</span>{% endif %}</p>
+      <p class="mb-0"><strong>剩余号源：</strong>{{ remaining_slots }} / {{ schedule.total_capacity }}</p>
+    </div>
+  </div>
+
+  {% if duplicate_doctor_same_day %}
+  <div class="alert alert-warning">您在该出诊日已预约过该医生，请勿重复挂号。</div>
+  <a href="{% url 'core:patient_doctor_schedules' doctor_id=schedule.doctor_id %}" class="btn btn-outline-primary">返回号源</a>
+  {% elif not can_book %}
+  <div class="alert alert-danger">
+    {% if not balance_sufficient %}余额不足，请先充值后再挂号。{% elif remaining_slots <= 0 %}该排班号源已满。{% else %}该班次已不可预约。{% endif %}
+  </div>
+  {% if not balance_sufficient %}
+  <p class="mb-2"><a href="{% url 'core:patient_personal_center' %}" class="btn btn-warning btn-sm fw-semibold">去个人中心充值</a></p>
+  {% endif %}
+  <a href="{% url 'core:patient_doctor_schedules' doctor_id=schedule.doctor_id %}" class="btn btn-outline-primary">返回号源</a>
+  {% else %}
+  <form method="post" action="" class="card border-0 shadow-sm rounded-3 p-4">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.ai_report.id_for_label }}">{{ form.ai_report.label }}</label>
+      {{ form.ai_report.errors }}
+      {{ form.ai_report }}
+      <div class="form-text">{{ form.ai_report.help_text }}</div>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="{{ form.remark.id_for_label }}">{{ form.remark.label }}</label>
+      {{ form.remark.errors }}
+      {{ form.remark }}
+    </div>
+    <button type="submit" class="btn btn-primary">提交挂号</button>
+    <a href="{% url 'core:patient_doctor_schedules' doctor_id=schedule.doctor_id %}" class="btn btn-link">取消</a>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

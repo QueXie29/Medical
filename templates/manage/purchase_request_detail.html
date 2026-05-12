@@ -1,0 +1,73 @@
+{% extends "core/base.html" %}
+{% block title %}采购申请 #{{ purchase_request.pk }} — 管理{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <a href="{% url 'core:admin_purchase_request_list' %}" class="detail-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 返回列表</a>
+
+  <div class="modern-detail-card">
+    <div class="detail-header">
+      <h1 class="detail-title">采购申请 #{{ purchase_request.pk }}</h1>
+      {% if purchase_request.status == 'approved' %}
+      <span class="badge-modern badge-success">{{ purchase_request.get_status_display }}</span>
+      {% elif purchase_request.status == 'rejected' %}
+      <span class="badge-modern badge-danger">{{ purchase_request.get_status_display }}</span>
+      {% elif purchase_request.status == 'pending' %}
+      <span class="badge-modern badge-warning">{{ purchase_request.get_status_display }}</span>
+      {% else %}
+      <span class="badge-modern badge-info">{{ purchase_request.get_status_display }}</span>
+      {% endif %}
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">药品</div>
+          <div class="info-value">{{ purchase_request.drug.name }} · {{ purchase_request.drug.specification }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">申请数量</div>
+          <div class="info-value">{{ purchase_request.quantity }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">申请人</div>
+          <div class="info-value">{{ purchase_request.requester.real_name|default:purchase_request.requester.username }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">审批人</div>
+          <div class="info-value">{% if purchase_request.reviewer %}{{ purchase_request.reviewer.real_name|default:purchase_request.reviewer.username }}{% else %}—{% endif %}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">申请时间</div>
+          <div class="info-value">{{ purchase_request.created_at|date:"Y-m-d H:i" }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">审批时间</div>
+          <div class="info-value">{% if purchase_request.reviewed_at %}{{ purchase_request.reviewed_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="my-4" style="border-color:#e2e8f0;">
+
+    <div class="mb-4">
+      <div class="info-label">申请原因</div>
+      <div class="content-block">{{ purchase_request.reason|default:"—" }}</div>
+    </div>
+    <div class="mb-0">
+      <div class="info-label">审批意见</div>
+      <div class="content-block">{{ purchase_request.review_comment|default:"—" }}</div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "core/base.html" %}
+{% block title %}{{ profile_patient.real_name|default:profile_patient.username }} — 患者全景档案{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .ehr-timeline { margin: 0; padding: 0; list-style: none; }
+  .ehr-timeline li {
+    position: relative;
+    padding-left: 1rem;
+    margin-bottom: 1.25rem;
+    border-left: 3px solid #e2e8f0;
+    padding-bottom: 0.25rem;
+  }
+  .ehr-timeline li:last-child { margin-bottom: 0; }
+  .ehr-timeline time { font-size: 0.78rem; color: #64748b; display: block; margin-bottom: 0.35rem; }
+  .ehr-timeline .ehr-head { color: #0f172a; font-size: 0.95rem; font-weight: 600; }
+  .ehr-pre { white-space: pre-wrap; font-size: 0.88rem; color: #334155; margin: 0.4rem 0 0; line-height: 1.55; }
+  .ehr-empty { color: #94a3b8; font-size: 0.9rem; margin: 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <a href="javascript:history.back()" class="text-decoration-none text-muted mb-3 d-inline-block"><i class="fas fa-arrow-left"></i> 返回患者列表</a>
+
+  <div class="modern-card p-4 mb-4">
+    <div class="d-flex align-items-center mb-4">
+      <div class="bg-info bg-opacity-10 text-info rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+        <i class="fas fa-user-injured"></i>
+      </div>
+      <div>
+        <h4 class="mb-1 fw-bold text-dark">{{ profile_patient.real_name|default:profile_patient.username }}</h4>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-md-3">
+        <div class="text-muted small text-uppercase mb-1 fw-bold">性别</div>
+        <div class="fw-medium text-dark">{% if profile_patient.gender %}{{ profile_patient.get_gender_display }}{% else %}未填写{% endif %}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small text-uppercase mb-1 fw-bold">年龄</div>
+        <div class="fw-medium text-dark">{% if profile_patient.age %}{{ profile_patient.age }} 岁{% else %}未填写{% endif %}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small text-uppercase mb-1 fw-bold">联系方式</div>
+        <div class="fw-medium text-dark">{{ profile_patient.phone|default:"未填写" }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small text-uppercase mb-1 fw-bold">电子邮箱</div>
+        <div class="fw-medium text-dark">{{ profile_patient.email|default:"—" }}</div>
+      </div>
+      <div class="col-md-6">
+        <div class="text-muted small text-uppercase mb-1 fw-bold">家庭住址</div>
+        <div class="fw-medium text-dark">{{ profile_patient.address|default:"未填写"|linebreaksbr }}</div>
+      </div>
+      <div class="col-md-3">
+        <div class="text-muted small text-uppercase mb-1 fw-bold">注册时间</div>
+        <div class="fw-medium text-dark">{{ profile_patient.date_joined|date:"Y-m-d H:i" }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modern-card p-4 mb-4">
+    <h5 class="mb-4 text-dark border-bottom pb-3" style="border-color: #f1f5f9 !important;"><i class="fas fa-stethoscope text-primary me-2"></i>历史就诊与病历</h5>
+    {% if medical_records %}
+    <ul class="ehr-timeline">
+      {% for rec in medical_records %}
+      <li>
+        <time>{{ rec.created_at|date:"Y-m-d H:i" }}</time>
+        <div class="ehr-head">
+          {{ rec.appointment.schedule.department.name|default:"—" }} ·
+          接诊：{{ rec.doctor.real_name|default:rec.doctor.username }}
+        </div>
+        <p class="ehr-pre"><strong>主诉：</strong>{{ rec.chief_complaint }}</p>
+        <p class="ehr-pre"><strong>诊断：</strong>{{ rec.diagnosis }}</p>
+        {% if rec.present_illness %}<p class="ehr-pre"><strong>现病史：</strong>{{ rec.present_illness }}</p>{% endif %}
+        {% if rec.treatment_plan %}<p class="ehr-pre"><strong>处理意见：</strong>{{ rec.treatment_plan }}</p>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="ehr-empty">暂无电子病历记录。</p>
+    {% endif %}
+  </div>
+
+  <div class="modern-card p-4">
+    <h5 class="mb-4 text-dark border-bottom pb-3" style="border-color: #f1f5f9 !important;"><i class="fas fa-pills text-success me-2"></i>历次处方明细</h5>
+    {% if prescriptions %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle">
+        <thead>
+          <tr>
+            <th>开具时间</th>
+            <th>状态</th>
+            <th>开方医生</th>
+            <th>备注</th>
+            <th>药品明细</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for rx in prescriptions %}
+          <tr>
+            <td>{{ rx.created_at|date:"Y-m-d H:i" }}</td>
+            <td>
+              {% if rx.status == "draft" %}
+                <span class="badge rounded-pill text-bg-secondary">草稿</span>
+              {% elif rx.status == "signed" %}
+                <span class="badge rounded-pill text-bg-primary">已签署</span>
+              {% elif rx.status == "dispensed" %}
+                <span class="badge rounded-pill text-bg-success">已发药</span>
+              {% elif rx.status == "cancelled" %}
+                <span class="badge rounded-pill text-bg-light text-dark border">已作废</span>
+              {% else %}
+                <span class="badge rounded-pill text-bg-light text-dark border">{{ rx.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ rx.doctor.real_name|default:rx.doctor.username }}</td>
+            <td>{{ rx.notes|default:"—"|truncatechars:40 }}</td>
+            <td>
+              {% if rx.lines.all %}
+              <ul class="mb-0 ps-3 small">
+                {% for line in rx.lines.all %}
+                <li>{{ line.drug.name }} × {{ line.quantity }} · {{ line.dosage_instruction }}</li>
+                {% endfor %}
+              </ul>
+              {% else %}<span class="hint">—</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="ehr-empty">暂无处方记录。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

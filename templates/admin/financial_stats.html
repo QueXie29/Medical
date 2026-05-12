@@ -1,0 +1,161 @@
+{% extends "core/base.html" %}
+{% block title %}财务统计 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .fin-chart-canvas-wrap { position: relative; height: 300px; max-height: 320px; }
+  .fin-chart-canvas-wrap canvas { max-height: 300px; }
+  .fin-subgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 900px) { .fin-subgrid { grid-template-columns: 1fr; } }
+  .fin-legend { font-size: 0.82rem; color: #64748b; margin-top: 0.75rem; }
+  .fin-legend li { margin-bottom: 0.25rem; }
+  .fin-filter-form .form-control { min-height: 38px; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="modern-card p-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <h5 class="mb-0 text-dark fw-bold"><i class="fas fa-coins text-warning me-2"></i>财务营收分析</h5>
+      <form method="get" action="" class="d-flex flex-wrap gap-2 align-items-center m-0 fin-filter-form">
+        <input type="date" name="start_date" class="form-control form-control-sm" style="width: 140px;" value="{{ request.GET.start_date|default:'' }}" aria-label="开始日期">
+        <span class="text-muted small">至</span>
+        <input type="date" name="end_date" class="form-control form-control-sm" style="width: 140px;" value="{{ request.GET.end_date|default:'' }}" aria-label="结束日期">
+        <button type="submit" class="btn btn-primary btn-sm px-3 text-white" style="background-color: #0d9488; border: none;">筛选</button>
+        <a href="{% url 'core:admin_financial_stats' %}" class="btn btn-light btn-sm px-3 border">重置</a>
+      </form>
+    </div>
+
+    <p class="text-muted small mb-4">基于订单流水：仅统计<strong>挂号费、药费</strong>（已支付）；<strong>不含充值</strong>。数据截止 {{ today|date:"Y-m-d" }}，按系统当前时区汇总。</p>
+
+    <div class="modern-card p-4 mb-4 border-0 text-center" style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); box-shadow: inset 0 2px 10px rgba(16, 185, 129, 0.05);">
+      <div class="text-success mb-2 fw-bold" style="letter-spacing: 1px; font-size: 0.9rem;">当前区间总营收</div>
+      <div class="display-5 fw-bolder text-success">¥ {{ total_revenue|floatformat:2 }}</div>
+      <div class="small text-success text-opacity-75 mt-2 mb-0">今日实收 <span class="fw-semibold">¥ {{ today_revenue|floatformat:2 }}</span></div>
+    </div>
+
+    <div class="fin-subgrid mb-4">
+      <div class="modern-card p-3 border" style="border-color:#e2e8f0 !important;">
+        <h2 class="h6 mb-3 text-dark fw-bold">近 7 日营收趋势</h2>
+        <div class="fin-chart-canvas-wrap">
+          <canvas id="revenueChart" aria-label="近7日营收折线图"></canvas>
+        </div>
+      </div>
+      <div class="modern-card p-3 border" style="border-color:#e2e8f0 !important;">
+        <h2 class="h6 mb-3 text-dark fw-bold">今日科室收入分布</h2>
+        <div class="fin-chart-canvas-wrap">
+          <canvas id="finPieChart" aria-label="收入分布饼图"></canvas>
+        </div>
+        {% if dept_legend %}
+        <ul class="fin-legend list-unstyled mb-0">
+          {% for row in dept_legend %}
+          <li><strong class="text-dark">￥{{ row.amount|floatformat:2 }}</strong> — {{ row.name }}</li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <p class="hint mb-0" style="margin-top:0.5rem;">今日暂无已支付订单。</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <h5 class="h6 text-dark fw-bold mb-3"><i class="fas fa-table text-primary me-2"></i>今日科室营收明细</h5>
+    {% if dept_legend %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle mb-0">
+        <thead>
+          <tr>
+            <th>科室</th>
+            <th class="text-end">金额（元）</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in dept_legend %}
+          <tr>
+            <td>{{ row.name }}</td>
+            <td class="text-end fw-semibold text-success">￥{{ row.amount|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="hint mb-0">暂无表格数据。</p>
+    {% endif %}
+
+    <p class="hint mt-4 mb-0"><a href="{% url 'core:admin_order_list' %}">查看订单流水</a> · <a href="{% url 'core:admin_dashboard' %}">返回管理仪表盘</a></p>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
+<script>
+(function () {
+  var labels = JSON.parse('{{ chart_dates|default:"[]"|escapejs }}');
+  var dataPoints = JSON.parse('{{ chart_revenues|default:"[]"|escapejs }}');
+  var pieDataRaw = JSON.parse('{{ dept_pie_json|default:"[]"|escapejs }}');
+
+  var lineEl = document.getElementById("revenueChart");
+  if (lineEl && typeof Chart !== "undefined") {
+    var ctx = lineEl.getContext("2d");
+    new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "每日营收 (元)",
+          data: dataPoints,
+          borderColor: "#0d9488",
+          backgroundColor: "rgba(13, 148, 136, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } }
+      }
+    });
+  }
+
+  var pieEl = document.getElementById("finPieChart");
+  if (pieEl && typeof Chart !== "undefined" && pieDataRaw && pieDataRaw.length) {
+    var colors = [
+      "rgba(180, 83, 9, 0.85)", "rgba(13, 148, 136, 0.85)", "rgba(13, 110, 253, 0.85)",
+      "rgba(99, 102, 241, 0.85)", "rgba(219, 39, 119, 0.85)", "rgba(100, 116, 139, 0.85)"
+    ];
+    new Chart(pieEl.getContext("2d"), {
+      type: "pie",
+      data: {
+        labels: pieDataRaw.map(function (r) { return r.name; }),
+        datasets: [{
+          data: pieDataRaw.map(function (r) { return r.amount; }),
+          backgroundColor: pieDataRaw.map(function (_, i) { return colors[i % colors.length]; }),
+          borderWidth: 1,
+          borderColor: "#fff"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: "bottom" },
+          tooltip: {
+            callbacks: {
+              label: function (c) {
+                var v = c.raw;
+                return " ￥" + Number(v).toFixed(2);
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+})();
+</script>
+{% endblock %}

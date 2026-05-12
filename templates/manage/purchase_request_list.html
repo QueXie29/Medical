@@ -1,0 +1,72 @@
+{% extends "core/base.html" %}
+{% block title %}采购申请 — 管理{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .list-pagination { font-size: 0.875rem; }
+  .list-pagination a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="modern-card p-4">
+    <div class="mb-3">
+      <h5 class="mb-1 text-dark">药品采购申请</h5>
+      <p class="text-muted small mb-0">护士提交、护士长审批的申请（只读查阅）。</p>
+    </div>
+
+    <hr class="text-secondary opacity-25 mb-4">
+
+    {% if purchase_requests %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>药品</th>
+            <th>数量</th>
+            <th>申请人</th>
+            <th>状态</th>
+            <th>申请时间</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in purchase_requests %}
+          <tr>
+            <td>#{{ r.pk }}</td>
+            <td>{{ r.drug.name }}（{{ r.drug.specification }}）</td>
+            <td>{{ r.quantity }}</td>
+            <td>{{ r.requester.real_name|default:r.requester.username }}</td>
+            <td>
+              {% if r.status == 'approved' %}
+              <span class="badge-modern badge-success">{{ r.get_status_display }}</span>
+              {% elif r.status == 'rejected' %}
+              <span class="badge-modern badge-danger">{{ r.get_status_display }}</span>
+              {% elif r.status == 'pending' %}
+              <span class="badge-modern badge-warning">{{ r.get_status_display }}</span>
+              {% else %}
+              <span class="badge-modern badge-info">{{ r.get_status_display }}</span>
+              {% endif %}
+            </td>
+            <td>{{ r.created_at|date:"Y-m-d H:i" }}</td>
+            <td><a href="{% url 'core:admin_purchase_request_detail' pk=r.pk %}">详情</a></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+    <div class="list-pagination pt-3 mt-3 border-top">
+      {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">上一页</a>{% endif %}
+      <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+      {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">下一页</a>{% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <p class="hint mb-0">暂无申请。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

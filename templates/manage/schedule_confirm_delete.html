@@ -1,0 +1,17 @@
+{% extends "core/base.html" %}
+{% block title %}取消排班 — 智慧医疗{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>确认取消排班</h1>
+  <p>将删除以下排班（须无有效患者预约）：</p>
+  <ul class="hint" style="margin:0.5rem 0 1rem;padding-left:1.25rem;">
+    <li>{{ schedule.department.name }} · {{ schedule.doctor.real_name|default:schedule.doctor.username }}</li>
+    <li>{{ schedule.work_date }} · {{ schedule.get_shift_display }} · 总号源 {{ schedule.total_capacity }}</li>
+  </ul>
+  <form method="post" action="">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background:#b00020;">确认删除排班</button>
+  </form>
+  <p class="hint" style="margin-top:1rem;"><a href="{% url 'core:admin_schedule_list' %}">返回列表</a></p>
+</div>
+{% endblock %}

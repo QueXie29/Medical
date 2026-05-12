@@ -1,0 +1,61 @@
+{% extends "core/base.html" %}
+{% block title %}排班一览 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .actions a { margin-right: 0.5rem; white-space: nowrap; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>排班一览</h1>
+  <p class="hint">展示今日及未来排班。可编辑号源与开放状态；<strong>已有患者有效预约（非已取消）的排班不可删除</strong>，号源总数不可低于当前有效预约人数。</p>
+  <p><a href="{% url 'core:admin_schedule_publish' %}" class="btn" style="margin-top:0;">发布排班</a></p>
+  {% if schedules %}
+  <div class="table-responsive" style="margin-top:1rem;">
+    <table class="table table-hover table-modern align-middle">
+      <thead>
+        <tr>
+          <th>出诊日</th>
+          <th>班次</th>
+          <th>科室</th>
+          <th>医生</th>
+          <th>医生所属科室</th>
+          <th>总号源</th>
+          <th>挂号费</th>
+          <th>有效预约</th>
+          <th>开放预约</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in schedules %}
+        <tr>
+          <td>{{ s.work_date }}</td>
+          <td>{{ s.get_shift_display }}</td>
+          <td>{{ s.department.name }}</td>
+          <td>{{ s.doctor.real_name|default:s.doctor.username }}</td>
+          <td>{% if s.doctor.department %}{{ s.doctor.department.name }}{% else %}<span class="hint">未分配</span>{% endif %}</td>
+          <td>{{ s.total_capacity }}</td>
+          <td>￥{{ s.price }}</td>
+          <td>{{ s.effective_booked }}</td>
+          <td>{% if s.is_active %}是{% else %}否{% endif %}</td>
+          <td class="actions">
+            <a href="{% url 'core:admin_schedule_edit' pk=s.pk %}">编辑</a>
+            {% if s.effective_booked > 0 %}
+              <span class="hint" title="存在有效预约时不可删除">不可删除</span>
+            {% else %}
+              <a href="{% url 'core:admin_schedule_delete' pk=s.pk %}">取消</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="hint">暂无今日及之后的排班。</p>
+  {% endif %}
+</div>
+{% endblock %}

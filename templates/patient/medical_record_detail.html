@@ -1,0 +1,28 @@
+{% extends "base_patient.html" %}
+{% block title %}电子病历详情 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+  <p class="mb-3"><a href="{% url 'core:patient_appointment_list' %}" class="text-decoration-none">← 返回我的预约</a></p>
+  <div class="bg-white rounded-3 shadow-sm p-4 border border-light">
+    <h1 class="h4 fw-bold mb-3">电子病历</h1>
+    <p class="text-muted small mb-4">
+      {{ medical_record.appointment.schedule.work_date }} {{ medical_record.appointment.schedule.get_shift_display }} ·
+      {{ medical_record.appointment.schedule.department.name }} ·
+      {{ medical_record.appointment.schedule.doctor.real_name|default:medical_record.appointment.schedule.doctor.username }}
+    </p>
+    <p><strong>接诊医生：</strong>{{ medical_record.doctor.real_name|default:medical_record.doctor.username }}</p>
+    <h2 class="h6 fw-bold mt-4">主诉</h2>
+    <p class="text-break" style="white-space:pre-wrap;">{{ medical_record.chief_complaint }}</p>
+    {% if medical_record.present_illness %}
+    <h2 class="h6 fw-bold mt-3">现病史</h2>
+    <p class="text-break" style="white-space:pre-wrap;">{{ medical_record.present_illness }}</p>
+    {% endif %}
+    <h2 class="h6 fw-bold mt-3">诊断</h2>
+    <p class="text-break" style="white-space:pre-wrap;">{{ medical_record.diagnosis }}</p>
+    {% if medical_record.treatment_plan %}
+    <h2 class="h6 fw-bold mt-3">处理意见</h2>
+    <p class="text-break" style="white-space:pre-wrap;">{{ medical_record.treatment_plan }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

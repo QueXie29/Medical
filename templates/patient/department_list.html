@@ -1,0 +1,118 @@
+{% extends "base_patient.html" %}
+{% block title %}科室信息 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block extra_css %}
+<style>
+    /* 重新定义全局卡片基础质感 */
+    .modern-card {
+        background: #ffffff;
+        border: 1px solid #f1f5f9; /* 极淡的边框 */
+        border-radius: 20px; /* 大圆角显得更亲和 */
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); /* 极其柔和的阴影 */
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 2rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        height: 100%;
+    }
+
+    /* 悬浮交互：轻轻上浮并加深阴影 */
+    .modern-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+        border-color: #e2e8f0;
+    }
+
+    /* 摒弃深蓝，改用治愈系“浅青/高级灰蓝”按钮 */
+    .btn-modern-primary {
+        background-color: #0d9488; /* 现代医疗青色 */
+        color: #ffffff;
+        border-radius: 50px; /* 胶囊形按钮，显得不那么死板 */
+        padding: 0.6rem 2rem;
+        font-weight: 500;
+        letter-spacing: 1px;
+        border: none;
+        transition: background-color 0.2s;
+        width: 80%; /* 不占满全宽，留出呼吸感 */
+        margin-top: auto; /* 自动推到底部 */
+    }
+
+    .btn-modern-primary:hover {
+        background-color: #0f766e;
+        color: #ffffff;
+    }
+
+    .btn-modern-outline {
+        background-color: transparent;
+        color: #0d9488;
+        border: 1px solid #0d9488;
+        border-radius: 50px;
+        padding: 0.5rem 2rem;
+        font-weight: 500;
+        width: 80%;
+        margin-top: auto;
+        transition: all 0.2s;
+        text-decoration: none;
+        text-align: center;
+        display: inline-block;
+        box-sizing: border-box;
+    }
+
+    .btn-modern-outline:hover {
+        background-color: #f0fdfa; /* 极淡的青色背景 */
+        color: #0f766e;
+    }
+
+    /* 医生头像重构（科室页预留，与找医生页一致） */
+    .doctor-avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+        color: #0d9488;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 1.2rem;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .dept-list-page .page-lead {
+        color: #64748b;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        max-width: 42rem;
+    }
+    .dept-list-page .dept-desc {
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.65;
+        flex-grow: 1;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container py-4 py-md-5 dept-list-page">
+  <h1 class="h3 fw-bold mb-2 text-dark">科室信息</h1>
+  <p class="page-lead mb-4">选择科室了解简介，并可直接进入该科室下的医生挂号。</p>
+  {% if departments %}
+  <div class="row g-4">
+    {% for d in departments %}
+    <div class="col-12 col-md-3">
+      <div class="modern-card">
+        <h2 class="h5 fw-bold mb-3 text-dark">{{ d.name }}</h2>
+        <p class="dept-desc mb-0">{{ d.description|default:"暂无简介"|truncatewords:28 }}</p>
+        <a href="{% url 'core:patient_doctors' %}?department={{ d.pk }}" class="btn-modern-outline">进入</a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p class="text-muted">暂无可展示科室。</p>
+  {% endif %}
+</div>
+{% endblock %}

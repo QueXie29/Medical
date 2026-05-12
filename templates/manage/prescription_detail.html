@@ -1,0 +1,102 @@
+{% extends "core/base.html" %}
+{% block title %}处方 #{{ prescription.pk }} — 管理{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <a href="{% url 'core:admin_prescription_list' %}" class="detail-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 返回列表</a>
+
+  <div class="modern-detail-card">
+    <div class="detail-header">
+      <h1 class="detail-title">处方 #{{ prescription.pk }}</h1>
+      {% if prescription.status == 'dispensed' %}
+      <span class="badge-modern badge-success">{{ prescription.get_status_display }}</span>
+      {% elif prescription.status == 'cancelled' %}
+      <span class="badge-modern badge-danger">{{ prescription.get_status_display }}</span>
+      {% elif prescription.status == 'signed' %}
+      <span class="badge-modern badge-warning">{{ prescription.get_status_display }}</span>
+      {% elif prescription.status == 'draft' %}
+      <span class="badge-modern badge-muted">{{ prescription.get_status_display }}</span>
+      {% else %}
+      <span class="badge-modern badge-info">{{ prescription.get_status_display }}</span>
+      {% endif %}
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">患者</div>
+          <div class="info-value">{{ prescription.medical_record.patient.real_name|default:prescription.medical_record.patient.username }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">开方医生</div>
+          <div class="info-value">{{ prescription.doctor.real_name|default:prescription.doctor.username }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">关联病历</div>
+          <div class="info-value"><a href="{% url 'core:admin_medical_record_detail' pk=prescription.medical_record.pk %}">#{{ prescription.medical_record.pk }}</a></div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">开方时间</div>
+          <div class="info-value">{{ prescription.created_at|date:"Y-m-d H:i" }}</div>
+        </div>
+      </div>
+      {% if prescription.status == 'dispensed' %}
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">执行时间</div>
+          <div class="info-value">{% if prescription.executed_at %}{{ prescription.executed_at|date:"Y-m-d H:i" }}{% else %}—{% endif %}</div>
+        </div>
+      </div>
+      <div class="col-md-8 col-sm-12">
+        <div class="info-group">
+          <div class="info-label">执行备注</div>
+          <div class="info-value">{{ prescription.execution_note|default:"—" }}</div>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if prescription.notes %}
+    <hr class="my-4" style="border-color:#e2e8f0;">
+    <div class="mb-0">
+      <div class="info-label">医嘱说明</div>
+      <div class="content-block">{{ prescription.notes }}</div>
+    </div>
+    {% endif %}
+
+    <h2 class="detail-section-title">药品明细</h2>
+    {% if prescription.lines.all %}
+    <div class="modern-detail-table-wrap">
+      <table class="modern-detail-table">
+        <thead>
+          <tr>
+            <th>药品</th>
+            <th>规格</th>
+            <th>数量</th>
+            <th>用法用量</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for line in prescription.lines.all %}
+          <tr>
+            <td>{{ line.drug.name }}</td>
+            <td>{{ line.drug.specification }}</td>
+            <td>{{ line.quantity }}</td>
+            <td>{{ line.dosage_instruction }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="hint mb-0">无明细行。</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

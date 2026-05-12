@@ -1,0 +1,90 @@
+{% extends "patient/personal_center.html" %}
+{% block title %}我的预约 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .data-table th, .data-table td { border: 1px solid #e9ecef; padding: 0.55rem 0.65rem; text-align: left; vertical-align: top; }
+  .data-table th { background: #f8f9fa; }
+  .st { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 6px; font-size: 0.8rem; font-weight: 600; }
+  .st--pending { background: #fff3cd; color: #856404; }
+  .st--confirmed { background: #cfe2ff; color: #084298; }
+  .st--in_progress { background: #e7d5ff; color: #5b2c91; }
+  .st--completed { background: #d1e7dd; color: #0f5132; }
+  .st--cancelled { background: #e9ecef; color: #6c757d; }
+  .btn-cancel { padding: 0.35rem 0.65rem; font-size: 0.8rem; }
+  .diag-cell { max-width: 14rem; font-size: 0.85rem; }
+</style>
+{% endblock %}
+{% block patient_center_main %}
+<h2 class="h5 fw-bold mb-3">我的预约</h2>
+<p class="text-muted small mb-3">仅<strong>待就诊</strong>时可取消；取消后号源释放。</p>
+<p class="mb-3"><a href="{% url 'core:patient_doctors' %}" class="btn btn-sm btn-outline-primary">去预约挂号</a></p>
+{% if appointments %}
+<div class="table-responsive">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>出诊信息</th>
+        <th>状态</th>
+        <th>预问诊</th>
+        <th>预约时间</th>
+        <th>诊断 / 操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in appointments %}
+      <tr>
+        <td>
+          <strong>{{ a.schedule.work_date }}</strong> {{ a.schedule.get_shift_display }}<br>
+          <span class="text-muted small">{{ a.schedule.department.name }} · {{ a.schedule.doctor.real_name|default:a.schedule.doctor.username }}</span>
+        </td>
+        <td>
+          {% if a.status == 'pending' %}<span class="st st--pending">{{ a.get_status_display }}</span>
+          {% elif a.status == 'confirmed' %}<span class="st st--confirmed">{{ a.get_status_display }}</span>
+          {% elif a.status == 'in_progress' %}<span class="st st--in_progress">{{ a.get_status_display }}</span>
+          {% elif a.status == 'completed' %}<span class="st st--completed">{{ a.get_status_display }}</span>
+          {% elif a.status == 'cancelled' %}<span class="st st--cancelled">{{ a.get_status_display }}</span>
+          {% else %}<span class="st">{{ a.get_status_display }}</span>{% endif %}
+        </td>
+        <td class="small text-muted">{% if a.ai_report %}{{ a.ai_report.title|default:"报告"|truncatechars:24 }}{% else %}—{% endif %}</td>
+        <td class="small">{{ a.created_at|date:"Y-m-d H:i" }}</td>
+        <td class="diag-cell">
+          {% if a.status == 'pending' %}
+          <form method="post" action="{% url 'core:patient_appointment_cancel' pk=a.pk %}" class="js-cancel-appt d-inline">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-cancel">取消挂号</button>
+          </form>
+          {% elif a.status == 'completed' %}
+            {% if a.medical_record %}
+              <span class="text-muted">{{ a.medical_record.diagnosis|truncatechars:48 }}</span>
+              <a href="{% url 'core:patient_medical_record_detail' pk=a.medical_record.pk %}">详情</a>
+            {% else %}<span class="text-muted">暂无病历</span>{% endif %}
+          {% else %}—{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if is_paginated %}
+<nav class="mt-3 small">
+  {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}">上一页</a>{% endif %}
+  <span class="mx-2">第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+  {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}">下一页</a>{% endif %}
+</nav>
+{% endif %}
+{% else %}
+<p class="text-muted">暂无挂号记录。</p>
+{% endif %}
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.querySelectorAll("form.js-cancel-appt").forEach(function (form) {
+  form.addEventListener("submit", function (e) {
+    if (!window.confirm("确定取消该挂号？")) e.preventDefault();
+  });
+});
+</script>
+{% endblock %}

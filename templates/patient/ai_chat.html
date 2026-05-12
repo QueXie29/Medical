@@ -1,0 +1,447 @@
+{% extends "base_patient.html" %}
+{% block title %}智能助手 — AI 预问诊 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block extra_css %}
+<style>
+    /* 大圆角卡片（与患者端科室/找医生一致） */
+    .modern-card {
+        background: #ffffff;
+        border: 1px solid #f1f5f9;
+        border-radius: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        transition: box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 2rem 1.75rem;
+    }
+
+    /* One-screen：高度由视口减去顶栏/标题/底部控件，仅内部滚动 */
+    .chat-container {
+        /* 视口内动态高度；保底不超过剩余视口，避免 min-height 与 calc 冲突导致整页滚动 */
+        height: calc(100vh - 280px) !important;
+        min-height: max(0px, min(400px, calc(100vh - 280px))) !important;
+        background-color: #f8fafc;
+        border-radius: 16px;
+        padding: 1.5rem;
+        overflow-y: auto !important;
+        border: 1px solid #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* 本页收紧主区域底部留白，避免整页被 patient-main 再垫高一截 */
+    main.patient-main:has(.ai-chat-layout-root) {
+        padding-bottom: 0.75rem;
+    }
+
+    .ai-chat-layout-root {
+        padding-top: 0.75rem;
+        padding-bottom: 0.5rem;
+    }
+
+    .ai-chat-page.modern-card {
+        padding: 1.25rem 1.5rem;
+    }
+
+    /* 现代聊天气泡设计 */
+    .chat-bubble {
+        max-width: 80%;
+        padding: 12px 18px;
+        font-size: 1.05rem;
+        line-height: 1.5;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    /* 用户气泡：治愈青色，位于右侧 */
+    .chat-user {
+        align-self: flex-end;
+        background-color: #0d9488;
+        color: #ffffff;
+        border-radius: 20px 20px 4px 20px; /* 右下角直角，拟物化 */
+    }
+
+    /* AI 气泡：纯白背景，位于左侧 */
+    .chat-ai {
+        align-self: flex-start;
+        background-color: #ffffff;
+        color: #334155;
+        border-radius: 20px 20px 20px 4px; /* 左下角直角 */
+        border: 1px solid #f1f5f9;
+    }
+
+    /* 结束问诊：推荐科室卡片（紧凑 modern-card 风） */
+    .chat-bubble.chat-finish-card-wrap {
+        max-width: 92%;
+        padding: 0;
+        border: none;
+        background: transparent;
+        box-shadow: none;
+    }
+    .chat-finish-card-inner {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1rem 1.15rem;
+        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+        text-align: left;
+        white-space: normal;
+    }
+    .chat-finish-card-title {
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 0.5rem;
+        font-size: 1rem;
+    }
+    .chat-finish-card-inner > p {
+        margin: 0 0 0.5rem;
+        font-size: 0.9375rem;
+        line-height: 1.55;
+        color: #475569;
+    }
+    .chat-finish-card-inner > p:last-child { margin-bottom: 0; }
+    .chat-finish-card-inner .hint { font-size: 0.8rem; color: #94a3b8; margin-top: 0.35rem; }
+    .chat-symptom-badge {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid #99f6e4;
+        border-radius: 999px;
+        background: #f0fdfa;
+        color: #0f766e;
+        font-size: 0.78rem;
+        font-weight: 700;
+        line-height: 1.2;
+        padding: 0.25rem 0.6rem;
+        margin: 0.15rem 0 0.45rem;
+    }
+    .chat-patient-summary-card {
+        background: #f0fdfa;
+        border: 1px solid #ccfbf1;
+        border-radius: 1rem;
+        padding: 1rem;
+        margin: 0.75rem 0;
+    }
+    .chat-patient-summary-card h6 {
+        margin: 0 0 0.75rem;
+        font-size: 0.95rem;
+        color: #0f172a;
+    }
+    .chat-patient-summary-card p {
+        color: #6c757d;
+        line-height: 1.8;
+        margin: 0;
+        font-size: 0.9375rem;
+    }
+    a.btn-modern-primary.chat-finish-card-btn {
+        display: inline-block;
+        margin-top: 0.65rem;
+        text-decoration: none;
+        line-height: 1.3;
+    }
+
+    /* 现代输入框与按钮覆盖 */
+    .chat-input-area textarea {
+        border-radius: 16px;
+        border: 1px solid #cbd5e1;
+        resize: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.02) inset;
+        flex: 1;
+        min-height: 48px;
+        max-height: 140px;
+        padding: 0.65rem 1rem;
+        font-family: inherit;
+        font-size: 0.95rem;
+    }
+    .chat-input-area textarea:focus {
+        outline: none;
+        border-color: #0d9488;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+    }
+    .chat-input-area .chat-input-row {
+        display: flex;
+        gap: 0.65rem;
+        align-items: flex-end;
+    }
+
+    .btn-modern-primary {
+        background-color: #0d9488;
+        color: #ffffff;
+        border-radius: 50px;
+        padding: 0.6rem 1.75rem;
+        font-weight: 500;
+        letter-spacing: 0.06em;
+        border: none;
+        transition: background-color 0.2s;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.9375rem;
+        flex-shrink: 0;
+    }
+    .btn-modern-primary:hover:not(:disabled) {
+        background-color: #0f766e;
+        color: #ffffff;
+    }
+    .btn-modern-primary:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .btn-modern-outline {
+        background-color: transparent;
+        color: #64748b;
+        border: 1px solid #cbd5e1;
+        border-radius: 50px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        cursor: pointer;
+        font-family: inherit;
+        font-size: 0.875rem;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    }
+    .btn-modern-outline:hover:not(:disabled) {
+        background-color: #f8fafc;
+        color: #475569;
+        border-color: #94a3b8;
+    }
+    .btn-modern-outline:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .ai-chat-page-lead {
+        color: #64748b;
+        font-size: 0.9rem;
+        line-height: 1.55;
+        margin-bottom: 0.5rem;
+    }
+    .ai-chat-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+    .ai-chat-toolbar .hint { margin: 0; flex: 1; min-width: 200px; font-size: 0.8rem; color: #64748b; }
+    .ai-chat-status { font-size: 0.8rem; color: #64748b; min-height: 1.2em; margin-top: 0.25rem; margin-bottom: 0.25rem; }
+    .visually-hidden {
+        position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+        overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container ai-chat-layout-root">
+{{ initial_chat_messages|json_script:"initial-chat-messages" }}
+<div class="row justify-content-center">
+  <div class="col-lg-10 col-xl-8">
+    <div class="modern-card ai-chat-page">
+      <h1 class="h4 fw-bold text-dark mb-1">AI 预问诊</h1>
+      <p class="ai-chat-page-lead mb-0">与分诊助手对话，描述不适；完成后可生成摘要供就诊参考（不能替代面诊）。</p>
+      <div class="ai-chat-toolbar mt-2">
+        <p class="hint">回复由 DeepSeek 模型生成，请确认已配置 <code>DEEPSEEK_API_KEY</code>。</p>
+      </div>
+      <div class="chat-container" id="chat-log" aria-live="polite"></div>
+      <p class="ai-chat-status" id="chat-status"></p>
+      <div class="chat-input-area">
+        <div class="chat-input-row">
+          <label for="chat-input" class="visually-hidden">输入消息</label>
+          <textarea id="chat-input" rows="2" placeholder="请输入您的问题或症状…" maxlength="8000"></textarea>
+          <button type="button" class="btn-modern-primary" id="btn-send">发送</button>
+        </div>
+      </div>
+      <div class="mt-2">
+        <button type="button" class="btn-modern-outline" id="btn-finish">结束问诊并生成报告</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+{{ block.super }}
+<script>
+(function () {
+  var doctorsBaseUrl = "{% url 'core:patient_doctors' %}";
+  var logEl = document.getElementById("chat-log");
+  var inputEl = document.getElementById("chat-input");
+  var statusEl = document.getElementById("chat-status");
+  var sendBtn = document.getElementById("btn-send");
+  var finishBtn = document.getElementById("btn-finish");
+  if (!logEl || !inputEl) return;
+
+  var sendUrl = "{% url 'core:patient_ai_chat_send' %}";
+  var finishUrl = "{% url 'core:patient_ai_chat_finish' %}";
+
+  function getCookie(name) {
+    var m = document.cookie.match("(^|;)\\s*" + name + "\\s*=\\s*([^;]+)");
+    return m ? decodeURIComponent(m.pop()) : "";
+  }
+  var csrftoken = getCookie("csrftoken");
+
+  function appendBubble(role, text) {
+    var bubble = document.createElement("div");
+    bubble.className = "chat-bubble " + (role === "user" ? "chat-user" : "chat-ai");
+    bubble.textContent = text;
+    logEl.appendChild(bubble);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function escapeHtml(s) {
+    if (s == null || s === "") return "";
+    var d = document.createElement("div");
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  function appendFinishSummary(data) {
+    var wrap = document.createElement("div");
+    wrap.className = "chat-bubble chat-ai chat-finish-card-wrap";
+    var inner = document.createElement("div");
+    inner.className = "chat-finish-card-inner";
+
+    var titleEl = document.createElement("p");
+    titleEl.className = "chat-finish-card-title";
+    titleEl.textContent = "生成完毕！";
+    inner.appendChild(titleEl);
+
+    var p1 = document.createElement("p");
+    p1.innerHTML =
+      "为您生成了预问诊报告。「" +
+      escapeHtml(data.title || "—") +
+      "」（报告编号 #" +
+      escapeHtml(String(data.report_id != null ? data.report_id : "")) +
+      "）。";
+    inner.appendChild(p1);
+
+    if (data.symptom_keyword) {
+      var badge = document.createElement("span");
+      badge.className = "chat-symptom-badge";
+      badge.textContent = "症状：" + data.symptom_keyword;
+      inner.appendChild(badge);
+    }
+
+    if (data.patient_summary) {
+      var summaryCard = document.createElement("div");
+      summaryCard.className = "chat-patient-summary-card rounded-4 p-4";
+      summaryCard.innerHTML =
+        '<h6 class="fw-bold mb-3"><i class="fas fa-notes-medical text-primary me-2"></i>您的病情小结</h6>' +
+        '<p class="text-secondary"></p>';
+      summaryCard.querySelector("p").textContent = data.patient_summary;
+      inner.appendChild(summaryCard);
+    }
+
+    if (data.recommended_department_id && data.recommended_department_name) {
+      var p2 = document.createElement("p");
+      p2.innerHTML =
+        "根据您的症状描述，AI 分诊助手建议您前往<strong>【" +
+        escapeHtml(data.recommended_department_name) +
+        "】</strong>就诊。";
+      inner.appendChild(p2);
+      var link = document.createElement("a");
+      link.href =
+        doctorsBaseUrl +
+        "?department=" +
+        encodeURIComponent(String(data.recommended_department_id));
+      link.className = "btn-modern-primary chat-finish-card-btn";
+      link.textContent = "前往挂号";
+      inner.appendChild(link);
+    }
+
+    var foot = document.createElement("p");
+    foot.className = "hint";
+    foot.textContent = "您可在「我的预问诊报告」中查看完整内容。";
+    inner.appendChild(foot);
+
+    wrap.appendChild(inner);
+    logEl.appendChild(wrap);
+  }
+
+  function setBusy(busy, msg) {
+    sendBtn.disabled = busy;
+    finishBtn.disabled = busy;
+    inputEl.disabled = busy;
+    statusEl.textContent = msg || "";
+  }
+
+  function initialRender() {
+    var el = document.getElementById("initial-chat-messages");
+    if (!el || !el.textContent) return;
+    try {
+      var list = JSON.parse(el.textContent);
+      if (!Array.isArray(list)) return;
+      list.forEach(function (m) {
+        if (m && (m.role === "user" || m.role === "assistant") && m.content) {
+          appendBubble(m.role, m.content);
+        }
+      });
+    } catch (e) {}
+  }
+
+  function postJson(url, body) {
+    return fetch(url, {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrftoken,
+      },
+      body: JSON.stringify(body),
+    }).then(function (r) {
+      return r.json().then(function (data) {
+        return { ok: r.ok, status: r.status, data: data };
+      });
+    });
+  }
+
+  function sendMessage() {
+    var text = (inputEl.value || "").trim();
+    if (!text) return;
+    inputEl.value = "";
+    appendBubble("user", text);
+    setBusy(true, "正在思考…");
+    postJson(sendUrl, { message: text })
+      .then(function (res) {
+        if (res.ok && res.data.ok) {
+          appendBubble("assistant", res.data.reply);
+        } else {
+          var err = (res.data && res.data.error) ? res.data.error : "发送失败";
+          appendBubble("assistant", "【系统】" + err);
+        }
+      })
+      .catch(function () {
+        appendBubble("assistant", "【系统】网络错误，请稍后重试。");
+      })
+      .then(function () {
+        setBusy(false, "");
+      });
+  }
+
+  function finishChat() {
+    if (!confirm("确定结束问诊并生成报告？会话记录将写入预问诊报告并清空当前对话。")) return;
+    setBusy(true, "正在生成报告…");
+    postJson(finishUrl, {})
+      .then(function (res) {
+        if (res.ok && res.data.ok) {
+          appendFinishSummary(res.data);
+          logEl.scrollTop = logEl.scrollHeight;
+        } else {
+          var err = (res.data && res.data.error) ? res.data.error : "生成失败";
+          alert(err);
+        }
+      })
+      .catch(function () {
+        alert("网络错误，请稍后重试。");
+      })
+      .then(function () {
+        setBusy(false, "");
+      });
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+  finishBtn.addEventListener("click", finishChat);
+  inputEl.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  initialRender();
+})();
+</script>
+{% endblock %}

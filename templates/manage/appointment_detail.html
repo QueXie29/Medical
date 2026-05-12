@@ -1,0 +1,62 @@
+{% extends "core/base.html" %}
+{% block title %}挂号 #{{ appointment.pk }} — 管理{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block content %}
+<div class="container py-3">
+  <a href="{% url 'core:admin_appointment_list' %}" class="detail-back-link"><i class="fas fa-arrow-left" aria-hidden="true"></i> 返回列表</a>
+
+  <div class="modern-detail-card">
+    <div class="detail-header">
+      <h1 class="detail-title">预约挂号 #{{ appointment.pk }}</h1>
+      {% if appointment.status == 'completed' %}
+      <span class="badge-modern badge-success">{{ appointment.get_status_display }}</span>
+      {% elif appointment.status == 'cancelled' %}
+      <span class="badge-modern badge-danger">{{ appointment.get_status_display }}</span>
+      {% elif appointment.status == 'in_progress' %}
+      <span class="badge-modern badge-warning">{{ appointment.get_status_display }}</span>
+      {% else %}
+      <span class="badge-modern badge-info">{{ appointment.get_status_display }}</span>
+      {% endif %}
+    </div>
+
+    <div class="row g-3">
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">患者</div>
+          <div class="info-value">{{ appointment.patient.real_name|default:appointment.patient.username }}（{{ appointment.patient.username }}）</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">科室 / 医生 / 班次</div>
+          <div class="info-value">{{ appointment.schedule.department.name }} · {{ appointment.schedule.doctor.real_name|default:appointment.schedule.doctor.username }} · {{ appointment.schedule.work_date }} {{ appointment.schedule.get_shift_display }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">创建 / 更新</div>
+          <div class="info-value">{{ appointment.created_at|date:"Y-m-d H:i" }}<br>{{ appointment.updated_at|date:"Y-m-d H:i" }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">患者备注</div>
+          <div class="info-value">{{ appointment.remark|default:"—" }}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">预问诊报告</div>
+          <div class="info-value">{% if appointment.ai_report %}<a href="{% url 'core:admin_ai_report_detail' pk=appointment.ai_report.pk %}">#{{ appointment.ai_report.pk }} {{ appointment.ai_report.title|default:"查看" }}</a>{% else %}—{% endif %}</div>
+        </div>
+      </div>
+      <div class="col-md-4 col-sm-6">
+        <div class="info-group">
+          <div class="info-label">电子病历</div>
+          <div class="info-value">{% if linked_medical_record %}<a href="{% url 'core:admin_medical_record_detail' pk=linked_medical_record.pk %}">病历 #{{ linked_medical_record.pk }}</a>{% else %}—{% endif %}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

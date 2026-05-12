@@ -1,0 +1,60 @@
+{% extends "core/base.html" %}
+
+{% block title %}创建医护账号 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-12 col-xl-10">
+      <div class="modern-card p-4 mb-4">
+        <h4 class="mb-3 text-dark fw-bold border-bottom pb-3"><i class="fas fa-user-plus text-info me-2"></i>分配医护账号</h4>
+        <div class="alert alert-info bg-info bg-opacity-10 border-0 mb-4">
+          <i class="fas fa-info-circle me-1"></i> 系统将根据角色自动生成账号前缀（doc / nur / nur_head / admin）与递增序号。<strong>主治医生须选择所属科室</strong>，其它角色无需选择。初始密码默认为 <strong>123456</strong>，首次登录将强制拦截修改。
+        </div>
+        <form method="post" action="" id="employee-create-form">
+          {% csrf_token %}
+          <div class="row g-4 mb-4">
+            {% for field in form %}
+            <div class="col-md-6 form-field-wrap" data-field-name="{{ field.name }}">
+              <label class="form-label mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+              {{ field.errors }}
+            </div>
+            {% endfor %}
+          </div>
+          <div class="text-end">
+            <button type="submit" class="btn btn-info text-white px-5 rounded-pill" style="background-color: #0d9488; border: none;">确认分配账号</button>
+          </div>
+        </form>
+        <p class="hint mt-3 mb-0 text-center small">
+          <a href="{% url 'core:admin_staff_list' %}">员工信息列表</a>
+          ·
+          <a href="{% url 'core:home' %}">返回首页</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var form = document.getElementById("employee-create-form");
+  if (!form) return;
+  var roleEl = form.querySelector('[name="role"]');
+  var deptWrap = form.querySelector('[data-field-name="department"]');
+  if (!roleEl || !deptWrap) return;
+  function sync() {
+    var isDoc = roleEl.value === "doctor";
+    deptWrap.style.display = isDoc ? "" : "none";
+    var sel = deptWrap.querySelector("select");
+    if (sel && !isDoc) sel.selectedIndex = 0;
+  }
+  roleEl.addEventListener("change", sync);
+  sync();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,173 @@
+{% extends "base_patient.html" %}
+{% block title %}大厅 — {{ hospital_portal.hospital_name }}{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+    .hero-section {
+        width: 100%;
+        height: 45vh;
+        min-height: 360px;
+        max-height: 450px;
+        background-image: var(--patient-hero-fallback);
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        border-radius: 24px !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .text-content {
+        background: transparent !important;
+        backdrop-filter: none !important;
+        box-shadow: none !important;
+        padding: 40px;
+        text-align: center;
+        max-width: 90%;
+        z-index: 5;
+    }
+
+    .text-content h1 {
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1.2rem;
+        letter-spacing: 4px;
+        color: #ffffff;
+        text-shadow: none !important;
+        opacity: 0.95;
+    }
+
+    .text-content h5 {
+        font-size: 1.4rem;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+        letter-spacing: 2px;
+        margin-bottom: 0.8rem;
+    }
+
+    .text-content p {
+        font-size: 1.2rem;
+        color: rgba(255, 255, 255, 0.85);
+        font-weight: 400;
+        margin-bottom: 0;
+        letter-spacing: 1.5px;
+    }
+
+    .cards-section {
+        margin-top: 0 !important;
+        position: relative;
+        z-index: 10;
+        margin-bottom: 40px;
+    }
+
+    .lobby-card {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 4px 24px rgba(15, 23, 42, 0.12);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        height: 100%;
+        background: #fff;
+    }
+    .lobby-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.15);
+    }
+    .lobby-card .card-body {
+        padding: 1.75rem 1.25rem;
+    }
+    .lobby-card-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    .lobby-card a.stretched-link {
+        font-weight: 700;
+    }
+
+    @media (max-width: 576px) {
+        .hero-section {
+            height: 38vh;
+            min-height: 220px;
+            max-height: 320px;
+            margin-bottom: 1.25rem;
+        }
+        .text-content {
+            padding: 24px 16px;
+            max-width: 100%;
+        }
+        .text-content h5 {
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+        .text-content h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+        .text-content p {
+            font-size: 1.05rem;
+            letter-spacing: 0.5px;
+        }
+    }
+</style>
+{% if hospital_portal.hero_image %}
+<style>
+    .hero-section.hero-section--portal-image {
+        background-image: url("{{ hospital_portal.hero_image.url }}");
+    }
+</style>
+{% endif %}
+{% endblock %}
+
+{% block content %}
+{% with setting=hospital_portal %}
+<div class="container mt-4">
+    <div class="hero-section{% if setting.hero_image %} hero-section--portal-image{% endif %}">
+        <div class="text-content">
+            <h5 class="mb-3">{{ setting.hospital_name|default:"XXX医院" }}</h5>
+            <h1>{{ setting.hero_title|default:"关爱生命，从我做起" }}</h1>
+            <p>预约挂号 · 智能导诊 · 档案管理，一站完成</p>
+        </div>
+    </div>
+
+    <div class="cards-section">
+        <div class="row justify-content-center g-4">
+        <div class="col-md-4">
+            <div class="card lobby-card text-center">
+                <div class="card-body">
+                    <div class="lobby-card-icon" aria-hidden="true">📅</div>
+                    <h2 class="h5 card-title">预约挂号</h2>
+                    <p class="card-text text-muted small">按科室或医生查找出诊排班，在线选号</p>
+                    <a href="{% url 'core:patient_doctors' %}" class="stretched-link text-decoration-none">进入</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card lobby-card text-center">
+                <div class="card-body">
+                    <div class="lobby-card-icon" aria-hidden="true">🤖</div>
+                    <h2 class="h5 card-title">智能导诊</h2>
+                    <p class="card-text text-muted small">AI 预问诊，生成报告辅助就诊</p>
+                    <a href="{% url 'core:patient_ai_triage' %}" class="stretched-link text-decoration-none">进入</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card lobby-card text-center">
+                <div class="card-body">
+                    <div class="lobby-card-icon" aria-hidden="true">👤</div>
+                    <h2 class="h5 card-title">个人档案</h2>
+                    <p class="card-text text-muted small">完善资料、预约、账单与预问诊报告</p>
+                    <a href="{% url 'core:patient_personal_center' %}" class="stretched-link text-decoration-none">进入</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+</div>
+{% endwith %}
+{% endblock %}

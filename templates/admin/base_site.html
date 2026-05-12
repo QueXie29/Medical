@@ -1,0 +1,20 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'core:admin_dashboard' %}">{{ site_header|default:_('智慧医疗管理后台') }}</a></h1>
+{% if user.is_anonymous %}
+  {% include "admin/color_theme_toggle.html" %}
+{% endif %}
+{% endblock %}
+
+{# 顶栏全局入口：凡已进入后台的页面（除 login 等覆盖本块为空的模板）均可见 #}
+{% block nav-global %}
+{% if has_permission %}
+<div id="staff-admin-quicklink" style="display:inline-flex;align-items:center;gap:0.5rem;margin-left:1rem;padding:4px 10px;background:#417690;border-radius:4px;">
+  <a href="{% url 'core:admin_create_employee' %}" style="color:#fff;font-weight:600;text-decoration:none;">医护账号动态分配</a>
+</div>
+{% endif %}
+{% endblock %}

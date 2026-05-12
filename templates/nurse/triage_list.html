@@ -1,0 +1,179 @@
+{% extends "core/base.html" %}
+{% block title %}门诊分诊台 — 护士工作台{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide nr-triage-wrap{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .main-inner.nr-triage-wrap { max-width: 1200px; }
+  .nr-page-hero { margin-bottom: 1.35rem; }
+  .nr-page-hero h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0 0 0.35rem;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+  }
+  .nr-page-hero p { margin: 0; font-size: 0.9rem; color: #64748b; line-height: 1.55; }
+
+  .nr-triage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.15rem;
+  }
+
+  .nr-triage-card {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+  }
+  .nr-triage-card:hover {
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
+    transform: translateY(-1px);
+  }
+  .nr-triage-card--done { border-top: 3px solid #10b981; }
+  .nr-triage-card--pending { border-top: 3px solid #f97316; }
+
+  .nr-triage-card__top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .nr-triage-name { font-size: 1.08rem; font-weight: 800; margin: 0 0 0.2rem; color: #0f172a; }
+  .nr-triage-sub { font-size: 0.8rem; color: #64748b; margin: 0; }
+
+  .nr-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.28rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .nr-badge--ok {
+    background: linear-gradient(180deg, #d1fae5 0%, #a7f3d0 100%);
+    color: #047857;
+    border: 1px solid #6ee7b7;
+  }
+  .nr-badge--todo {
+    background: linear-gradient(180deg, #ffedd5 0%, #fed7aa 100%);
+    color: #9a3412;
+    border: 1px solid #fdba74;
+  }
+
+  .nr-triage-meta {
+    font-size: 0.86rem;
+    color: #475569;
+    line-height: 1.55;
+    margin-bottom: 0.85rem;
+  }
+  .nr-triage-meta strong { color: #334155; }
+
+  .nr-triage-vitals {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: #334155;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.85rem;
+    border: 1px solid #e8ecf1;
+  }
+  .nr-triage-vitals span { color: #64748b; }
+  .nr-triage-time { font-size: 0.72rem; color: #94a3b8; margin-top: 0.35rem; }
+
+  .nr-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 10px;
+    text-decoration: none;
+    font-family: inherit;
+    cursor: pointer;
+    border: none;
+    transition: filter 0.15s, transform 0.05s;
+  }
+  .nr-btn:active { transform: scale(0.98); }
+  .nr-btn--cta {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 0.92rem;
+    background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(220, 38, 38, 0.35);
+  }
+  .nr-btn--cta:hover { filter: brightness(1.06); text-decoration: none; color: #fff; }
+  .nr-btn--ghost {
+    width: 100%;
+    background: #fff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+  }
+  .nr-btn--ghost:hover { background: #eff6ff; text-decoration: none; color: #1d4ed8; }
+
+  .nr-empty {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    background: #fff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 14px;
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+</style>
+{% endblock %}
+{% block content %}
+<div class="nr-page-hero">
+  <h1>门诊分诊台</h1>
+  <p>今日「待就诊」挂号一览。请优先完成<strong>体征录入</strong>后再候诊；已测患者以绿色标识。</p>
+</div>
+
+{% if appointments %}
+<div class="nr-triage-grid">
+  {% for a in appointments %}
+  <article class="nr-triage-card {% if a.vital_sign %}nr-triage-card--done{% else %}nr-triage-card--pending{% endif %}">
+    <div class="nr-triage-card__top">
+      <div>
+        <h2 class="nr-triage-name">{{ a.patient.real_name|default:a.patient.username }}</h2>
+        <p class="nr-triage-sub">{{ a.patient.username }}</p>
+      </div>
+      {% if a.vital_sign %}
+      <span class="nr-badge nr-badge--ok">已测</span>
+      {% else %}
+      <span class="nr-badge nr-badge--todo">待测</span>
+      {% endif %}
+    </div>
+    <div class="nr-triage-meta">
+      <strong>{{ a.schedule.department.name }}</strong><br>
+      {{ a.schedule.doctor.real_name|default:a.schedule.doctor.username }} · {{ a.schedule.get_shift_display }}
+    </div>
+    {% if a.vital_sign %}
+    <div class="nr-triage-vitals">
+      <strong>体温</strong> {{ a.vital_sign.temperature }} ℃ ·
+      <strong>血压</strong> {{ a.vital_sign.blood_pressure }} mmHg ·
+      <strong>心率</strong> {{ a.vital_sign.heart_rate }} bpm
+      <div class="nr-triage-time">录入 {{ a.vital_sign.recorded_at|date:"Y-m-d H:i" }}</div>
+    </div>
+    <a class="nr-btn nr-btn--ghost" href="{% url 'core:nurse_vital_sign_create' pk=a.pk %}">修改体征</a>
+    {% else %}
+    <a class="nr-btn nr-btn--cta" href="{% url 'core:nurse_vital_sign_create' pk=a.pk %}">去录入体征</a>
+    {% endif %}
+  </article>
+  {% endfor %}
+</div>
+{% else %}
+<div class="nr-empty">当前暂无待就诊挂号。</div>
+{% endif %}
+{% endblock %}

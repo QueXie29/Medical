@@ -1,0 +1,243 @@
+{% extends "core/base.html" %}
+{% block title %}我的看板 — 医生工作台{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide doc-dash-wrap{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .main-inner.doc-dash-wrap { max-width: 1320px; }
+  .doc-dash-hero { margin-bottom: 1.5rem; }
+  .doc-dash-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 0.35rem; color: #0f172a; letter-spacing: -0.02em; }
+  .doc-dash-hero p { margin: 0; font-size: 0.9rem; color: #64748b; }
+
+  .doc-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (max-width: 1024px) { .doc-kpi-row { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .doc-kpi-row { grid-template-columns: 1fr; } }
+
+  .doc-kpi {
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .doc-kpi::after {
+    content: "";
+    position: absolute;
+    right: -20%;
+    top: -40%;
+    width: 55%;
+    height: 140%;
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .doc-kpi__label { font-size: 0.78rem; font-weight: 600; opacity: 0.92; letter-spacing: 0.04em; text-transform: uppercase; margin: 0 0 0.4rem; position: relative; z-index: 1; }
+  .doc-kpi__val { font-size: 2rem; font-weight: 800; line-height: 1.1; margin: 0; position: relative; z-index: 1; letter-spacing: -0.03em; }
+  .doc-kpi__hint { font-size: 0.75rem; opacity: 0.88; margin: 0.5rem 0 0; line-height: 1.4; position: relative; z-index: 1; }
+  .doc-kpi--indigo { background: linear-gradient(135deg, #4f46e5 0%, #6366f1 50%, #818cf8 100%); }
+  .doc-kpi--amber { background: linear-gradient(135deg, #d97706 0%, #f59e0b 55%, #fbbf24 100%); }
+  .doc-kpi--emerald { background: linear-gradient(135deg, #047857 0%, #10b981 55%, #34d399 100%); }
+  .doc-kpi--slate { background: linear-gradient(135deg, #334155 0%, #475569 50%, #64748b 100%); }
+
+  .doc-dash-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+  @media (max-width: 1100px) { .doc-dash-grid { grid-template-columns: 1fr; } }
+
+  .doc-panel {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  }
+  .doc-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 2px solid #f1f5f9;
+  }
+  .doc-panel__title { font-size: 1.05rem; font-weight: 700; margin: 0; color: #0f172a; }
+  .doc-panel__link { font-size: 0.85rem; font-weight: 600; }
+
+  .doc-table-wrap { overflow-x: auto; margin: 0 -0.15rem; }
+  .doc-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+  .doc-table th, .doc-table td { border: 1px solid #e8ecf1; padding: 0.55rem 0.65rem; text-align: left; vertical-align: middle; }
+  .doc-table th { background: #f8fafc; color: #475569; font-weight: 600; }
+  .doc-table tbody tr:hover { background: #fafbfc; }
+  .doc-ai-badge {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #bbf7d0;
+    border-radius: 999px;
+    background: #f0fdf4;
+    color: #047857;
+    font-size: 0.78rem;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 0.22rem 0.55rem;
+    white-space: nowrap;
+  }
+
+  /* 与队列页共用的状态样式（看板内嵌队列） */
+  @keyframes doc-pulse-red {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55); }
+    50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+  }
+  .doc-st { display: inline-flex; align-items: center; gap: 0.35rem; font-weight: 700; font-size: 0.82rem; padding: 0.28rem 0.55rem; border-radius: 999px; line-height: 1.2; }
+  .doc-st--pending {
+    background: #dc2626;
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    animation: doc-pulse-red 1.6s ease-in-out infinite;
+  }
+  .doc-st__pulse {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: #fff;
+    flex-shrink: 0;
+    animation: doc-blink 1s step-end infinite;
+  }
+  @keyframes doc-blink { 50% { opacity: 0.35; } }
+  .doc-st--done { background: #f0fdf4; color: #6b7280; font-weight: 600; border: 1px solid #d1fae5; }
+  .doc-st--progress { background: #ede9fe; color: #5b21b6; font-weight: 600; }
+  .doc-st--confirmed { background: #dbeafe; color: #1d4ed8; font-weight: 600; }
+  .doc-st--muted { background: #f1f5f9; color: #64748b; font-weight: 500; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="doc-dash-hero">
+  <h1>我的看板</h1>
+  <p>{{ today }} 工作日概览 · 未来 7 天排班与今日候诊患者</p>
+</div>
+
+<div class="doc-kpi-row">
+  <div class="doc-kpi doc-kpi--indigo">
+    <p class="doc-kpi__label">今日总号源</p>
+    <p class="doc-kpi__val">{{ today_capacity_sum }}</p>
+    <p class="doc-kpi__hint">您名下今日所有排班的号源上限合计</p>
+  </div>
+  <div class="doc-kpi doc-kpi--amber">
+    <p class="doc-kpi__label">待接诊人数</p>
+    <p class="doc-kpi__val">{{ today_awaiting_count }}</p>
+    <p class="doc-kpi__hint">待就诊、已确认、就诊中（未取消、未完成）</p>
+  </div>
+  <div class="doc-kpi doc-kpi--emerald">
+    <p class="doc-kpi__label">已接诊人数</p>
+    <p class="doc-kpi__val">{{ today_completed_count }}</p>
+    <p class="doc-kpi__hint">今日已完成就诊的挂号数</p>
+  </div>
+  <div class="doc-kpi doc-kpi--slate">
+    <p class="doc-kpi__label">今日有效预约</p>
+    <p class="doc-kpi__val">{{ today_booked_effective }}</p>
+    <p class="doc-kpi__hint">今日已预约且未取消（占用号源）</p>
+  </div>
+</div>
+
+<div class="doc-dash-grid">
+  <section class="doc-panel" aria-labelledby="doc-sched-title">
+    <div class="doc-panel__head">
+      <h2 class="doc-panel__title" id="doc-sched-title">未来排班</h2>
+      <span class="hint" style="font-size:0.8rem;">{{ today }} ～ {{ schedule_window_end }}</span>
+    </div>
+    {% if upcoming_schedules %}
+    <div class="doc-table-wrap">
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>班次</th>
+            <th>科室</th>
+            <th>预约</th>
+            <th>开放</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in upcoming_schedules %}
+          <tr>
+            <td><strong>{{ s.work_date }}</strong></td>
+            <td>{{ s.get_shift_display }}</td>
+            <td>{{ s.department.name }}</td>
+            <td>{{ s.booked }} / {{ s.total_capacity }}</td>
+            <td>{% if s.is_active %}<span style="color:#059669;font-weight:600;">是</span>{% else %}<span class="hint">否</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="hint" style="margin:0;">该窗口内暂无排班。</p>
+    {% endif %}
+  </section>
+
+  <section class="doc-panel" aria-labelledby="doc-queue-title">
+    <div class="doc-panel__head">
+      <h2 class="doc-panel__title" id="doc-queue-title">今日患者队列</h2>
+      <a class="doc-panel__link" href="{% url 'core:doctor_queue' %}">全屏队列页 →</a>
+    </div>
+    {% if today_queue %}
+    <div class="doc-table-wrap">
+      <table class="doc-table">
+        <thead>
+          <tr>
+            <th>患者</th>
+            <th>科室</th>
+            <th>班次</th>
+            <th>状态</th>
+            <th>预问诊</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in today_queue %}
+          <tr>
+            <td>{{ a.patient.real_name|default:a.patient.username }}</td>
+            <td>{{ a.schedule.department.name }}</td>
+            <td>{{ a.schedule.get_shift_display }}</td>
+            <td>{% include "doctor/includes/appointment_status_cell.html" with a=a %}</td>
+            <td>
+              {% if a.ai_report %}
+                {% with kw=a.ai_report.structured_content.symptom_keyword %}
+                  {% if kw %}
+                    <span class="doc-ai-badge">AI：{{ kw }}</span>
+                  {% else %}
+                    <span style="color:#059669;">有</span>
+                  {% endif %}
+                {% endwith %}
+              {% else %}
+                <span class="hint">无</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if a.status != 'completed' %}
+              <a href="{% url 'core:doctor_appointment_consult' pk=a.pk %}">{% if a.status == 'pending' %}<strong>接诊</strong>{% else %}接诊{% endif %}</a>
+              {% else %}
+              <a href="{% url 'core:doctor_appointment_consult' pk=a.pk %}">查看</a>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="hint" style="margin:0;">今日暂无有效预约患者。</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

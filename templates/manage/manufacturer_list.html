@@ -1,0 +1,72 @@
+{% extends "core/base.html" %}
+{% block title %}生产厂家管理 — 智慧医疗{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .mfg-actions a { margin-right: 0.65rem; white-space: nowrap; }
+  .mfg-empty { padding: 2rem; text-align: center; color: #94a3b8; font-size: 0.9rem; }
+  .mfg-pagination { font-size: 0.875rem; }
+  .mfg-pagination a { margin-right: 0.5rem; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container mt-4">
+  <div class="modern-card p-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
+      <div>
+        <h5 class="mb-1 text-dark">生产厂家管理</h5>
+        <p class="text-muted small mb-0">维护药品供应链中的生产厂家档案，供药品字典关联使用。</p>
+      </div>
+      <div>
+        <a href="{% url 'core:manufacturer_create' %}" class="btn btn-primary rounded-pill px-4">新建厂家</a>
+      </div>
+    </div>
+
+    <hr class="text-secondary opacity-25 mb-4">
+
+    {% if manufacturers %}
+    <div class="table-responsive">
+      <table class="table table-hover table-modern align-middle">
+        <thead>
+          <tr>
+            <th>厂家名称</th>
+            <th>联系人</th>
+            <th>联系电话</th>
+            <th>地址</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in manufacturers %}
+          <tr>
+            <td><strong>{{ m.name }}</strong></td>
+            <td>{{ m.contact_person|default:"—" }}</td>
+            <td>{{ m.contact_phone|default:"—" }}</td>
+            <td>{{ m.address|default:"—"|truncatechars:40 }}</td>
+            <td class="mfg-actions">
+              <a href="{% url 'core:manufacturer_edit' pk=m.pk %}">编辑</a>
+              <a href="{% url 'core:manufacturer_delete' pk=m.pk %}">删除</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if is_paginated %}
+    <div class="mfg-pagination pt-3 mt-3 border-top">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}">上一页</a>
+      {% endif %}
+      <span>第 {{ page_obj.number }} / {{ page_obj.paginator.num_pages }} 页</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}">下一页</a>
+      {% endif %}
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="mfg-empty">暂无生产厂家，请点击「新建厂家」添加。</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

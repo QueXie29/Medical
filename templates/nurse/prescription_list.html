@@ -1,0 +1,368 @@
+{% extends "core/base.html" %}
+{% block title %}处方执行 — 护士工作台{% endblock %}
+{% block main_inner_class %}main-inner main-inner--wide{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<style>
+  .modern-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  .modern-card h1 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 0.35rem;
+    letter-spacing: -0.02em;
+  }
+  .modern-card .rx-lead {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0 0 1.25rem;
+    line-height: 1.55;
+  }
+
+  .prescription-card {
+    background: #ffffff;
+    border: 1px solid #f1f5f9;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+  }
+  .prescription-header {
+    background-color: #f8fafc;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .prescription-header__patient {
+    font-weight: 700;
+    color: #0f172a;
+    font-size: 1.05rem;
+  }
+  .prescription-header__time {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+  }
+  .prescription-header__doctor {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: right;
+  }
+  .drug-info-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+  }
+  .drug-info-table td {
+    padding: 1rem 1.5rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .drug-info-table tr:last-child td { border-bottom: none; }
+  .drug-info-table .label-muted {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    width: 6rem;
+  }
+  .stock-ok { color: #0d9488; font-weight: 600; }
+  .stock-bad {
+    color: #dc2626;
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .btn-execute {
+    background-color: #0d9488;
+    color: #ffffff;
+    border-radius: 50px;
+    padding: 8px 24px;
+    font-weight: 500;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-execute:hover { background-color: #0f766e; color: #ffffff; transform: translateY(-2px); }
+  .btn-execute:disabled { background-color: #cbd5e1; cursor: not-allowed; transform: none; }
+  .btn-purchase-shortcut {
+    border-radius: 50px;
+    padding: 8px 18px;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+  .rx-notes {
+    padding: 0.75rem 1.5rem;
+    background: #fffbeb;
+    border-top: 1px solid #fde68a;
+    font-size: 0.88rem;
+    color: #92400e;
+  }
+  .rx-execute-panel {
+    padding: 1rem 1.5rem 1.25rem;
+    background: #fafafa;
+    border-top: 1px solid #f1f5f9;
+  }
+  .rx-execute-panel label { font-size: 0.85rem; color: #475569; font-weight: 600; }
+  .rx-completed-meta {
+    padding: 1rem 1.5rem;
+    background: #f0fdfa;
+    border-top: 1px solid #ccfbf1;
+    font-size: 0.88rem;
+    color: #0f766e;
+  }
+  .nav-tabs .nav-link { color: #64748b; font-weight: 600; }
+  .nav-tabs .nav-link.active { color: #0d9488 !important; }
+
+  /* 腕带扫码/核对区域 */
+  .scanner-box {
+    background-color: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .scanner-box.success {
+    border-color: #10b981;
+    background-color: #ecfdf5;
+  }
+  .scanner-box.error {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+  }
+  .scanner-input {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 12px;
+    flex-grow: 1;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .scanner-input:focus {
+    border-color: #0d9488;
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.1);
+  }
+  .lock-icon {
+    color: #94a3b8;
+    font-size: 1.2rem;
+    transition: color 0.3s;
+    flex-shrink: 0;
+  }
+  .scanner-box.success .lock-icon {
+    color: #10b981;
+  }
+  .btn-execute.btn-locked {
+    background-color: #cbd5e1;
+    color: #fff;
+  }
+  .btn-execute.btn-locked:hover {
+    transform: none;
+    background-color: #cbd5e1;
+    color: #fff;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="modern-card">
+  <h1>处方执行工作台</h1>
+  <p class="rx-lead mb-0">
+    「待执行」为医生已签署处方；发药前须<strong>核对患者挂号单号</strong>（模拟腕带扫码），通过后再提交；服务端会再次校验，防篡改。
+    发药时同时校验库存与患者余额。库存不足请使用卡片内链接发起 <a href="{% url 'core:nurse_purchase_request' %}">采购申请</a>。
+  </p>
+</div>
+
+<ul class="nav nav-tabs mb-3" id="rxTabs" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="tab-pending" data-bs-toggle="tab" data-bs-target="#pane-pending" type="button" role="tab" aria-controls="pane-pending" aria-selected="true">
+      待执行处方
+    </button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="tab-done" data-bs-toggle="tab" data-bs-target="#pane-done" type="button" role="tab" aria-controls="pane-done" aria-selected="false">
+      已执行记录
+    </button>
+  </li>
+</ul>
+
+<div class="tab-content" id="rxTabContent">
+  <div class="tab-pane fade show active" id="pane-pending" role="tabpanel" aria-labelledby="tab-pending" tabindex="0">
+    {% if pending_prescriptions %}
+      {% for p in pending_prescriptions %}
+      <div class="prescription-card">
+        <div class="prescription-header">
+          <div>
+            <div class="prescription-header__patient">
+              {{ p.medical_record.patient.real_name|default:p.medical_record.patient.username }}
+            </div>
+            <div class="prescription-header__time">开方时间 {{ p.created_at|date:"Y-m-d H:i" }} · 处方 #{{ p.pk }}</div>
+          </div>
+          <div class="prescription-header__doctor">
+            开方医师：{{ p.doctor.real_name|default:p.doctor.username }}
+          </div>
+        </div>
+        <table class="drug-info-table">
+          {% for line in p.lines.all %}
+          <tr>
+            <td class="label-muted">药品</td>
+            <td>
+              <strong>{{ line.drug.name }}</strong>
+              <span class="text-muted small ms-1">规格 {{ line.drug.specification }}</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="label-muted">用法用量</td>
+            <td>{{ line.dosage_instruction }}</td>
+          </tr>
+          <tr>
+            <td class="label-muted">数量 / 库存</td>
+            <td>
+              需发 <strong>{{ line.quantity }}</strong> 单位
+              {% if line.drug.stock_quantity < line.quantity %}
+                <span class="stock-bad d-block mt-1">库存不足（当前: {{ line.drug.stock_quantity }}）</span>
+                <a href="{% url 'core:nurse_purchase_request' %}?drug={{ line.drug.pk }}" class="btn btn-outline-danger btn-sm btn-purchase-shortcut mt-2">发起采购申请</a>
+              {% else %}
+                <span class="stock-ok ms-2">库存充足（{{ line.drug.stock_quantity }}）</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% if p.notes %}
+        <div class="rx-notes"><strong>医嘱说明：</strong>{{ p.notes }}</div>
+        {% endif %}
+        <div class="rx-execute-panel">
+          {% if p.nurse_stock_sufficient %}
+          <form method="post" action="{% url 'core:nurse_prescription_dispense' pk=p.pk %}" class="rx-dispense-form">
+            {% csrf_token %}
+            <div class="scanner-box" id="scanner_box_{{ p.pk }}">
+              <i class="fas fa-lock lock-icon" id="lock_icon_{{ p.pk }}" aria-hidden="true"></i>
+              <input type="text"
+                     name="scanned_appointment_id"
+                     class="scanner-input"
+                     id="scan_input_{{ p.pk }}"
+                     data-rx-pk="{{ p.pk }}"
+                     data-correct-id="{{ p.medical_record.appointment_id }}"
+                     placeholder="请扫描或输入患者挂号单号（当前单号: {{ p.medical_record.appointment_id }}）"
+                     autocomplete="off"
+                     required>
+            </div>
+            <label for="exec-note-{{ p.pk }}" class="form-label">执行备注（选填）</label>
+            <input type="text" name="execution_note" class="form-control mb-3" id="exec-note-{{ p.pk }}" maxlength="255" placeholder="可选：添加护理执行备注…">
+            <button type="submit" class="btn-execute btn-locked w-100" id="btn_execute_{{ p.pk }}" disabled>身份未核对，禁止发药</button>
+          </form>
+          {% else %}
+          <p class="text-danger fw-semibold mb-2">该处方存在库存不足的药品，无法发药；请先补货或发起采购申请后再执行。</p>
+          <button type="button" class="btn-execute" disabled>确认发药 / 执行</button>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="hint text-muted">当前没有待执行的处方。</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="pane-done" role="tabpanel" aria-labelledby="tab-done" tabindex="0">
+    {% if completed_prescriptions %}
+      {% for p in completed_prescriptions %}
+      <div class="prescription-card">
+        <div class="prescription-header">
+          <div>
+            <div class="prescription-header__patient">
+              {{ p.medical_record.patient.real_name|default:p.medical_record.patient.username }}
+              <span class="badge bg-success ms-2" style="background-color:#0d9488!important;">已执行</span>
+            </div>
+            <div class="prescription-header__time">
+              开方 {{ p.created_at|date:"Y-m-d H:i" }}
+              {% if p.executed_at %}
+                · 执行 {{ p.executed_at|date:"Y-m-d H:i" }}
+              {% else %}
+                · 完成于 {{ p.updated_at|date:"Y-m-d H:i" }}
+              {% endif %}
+              · #{{ p.pk }}
+            </div>
+          </div>
+          <div class="prescription-header__doctor">
+            开方：{{ p.doctor.real_name|default:p.doctor.username }}
+          </div>
+        </div>
+        <table class="drug-info-table">
+          {% for line in p.lines.all %}
+          <tr>
+            <td class="label-muted">药品</td>
+            <td><strong>{{ line.drug.name }}</strong> <span class="text-muted small">× {{ line.quantity }}</span></td>
+          </tr>
+          <tr>
+            <td class="label-muted">用法用量</td>
+            <td>{{ line.dosage_instruction }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+        {% if p.execution_note %}
+        <div class="rx-completed-meta">
+          <strong>执行备注：</strong>{{ p.execution_note }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    {% else %}
+      <p class="hint text-muted">暂无已执行处方记录。</p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var scanInputs = document.querySelectorAll('.scanner-input');
+  scanInputs.forEach(function (input) {
+    input.addEventListener('input', function () {
+      var pk = input.getAttribute('data-rx-pk');
+      var correctId = String(input.getAttribute('data-correct-id') || '').trim();
+      var executeBtn = document.getElementById('btn_execute_' + pk);
+      var scannerBox = document.getElementById('scanner_box_' + pk);
+      var lockIcon = document.getElementById('lock_icon_' + pk);
+      if (!executeBtn || !scannerBox || !lockIcon) return;
+
+      var val = input.value.trim();
+      if (val === correctId && correctId !== '') {
+        scannerBox.classList.remove('error');
+        scannerBox.classList.add('success');
+        lockIcon.classList.remove('fa-lock');
+        lockIcon.classList.add('fa-lock-open');
+        executeBtn.disabled = false;
+        executeBtn.classList.remove('btn-locked');
+        executeBtn.textContent = '核对成功，确认发药 / 执行';
+        executeBtn.style.backgroundColor = '';
+      } else {
+        scannerBox.classList.remove('success');
+        lockIcon.classList.remove('fa-lock-open');
+        lockIcon.classList.add('fa-lock');
+        if (val !== '') {
+          scannerBox.classList.add('error');
+        } else {
+          scannerBox.classList.remove('error');
+        }
+        executeBtn.disabled = true;
+        executeBtn.classList.add('btn-locked');
+        executeBtn.textContent = '身份未核对，禁止发药';
+        executeBtn.style.backgroundColor = '';
+      }
+    });
+  });
+});
+</script>
+{% endblock %}
