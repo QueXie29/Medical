@@ -20,6 +20,7 @@ from .models import (
     UserRole,
     VitalSign,
 )
+from .schedule_utils import expired_schedule_message, is_schedule_shift_available
 
 
 class EmailOrUsernameAuthenticationForm(AuthenticationForm):
@@ -465,6 +466,8 @@ class SchedulePublishForm(forms.ModelForm):
         doc = cleaned.get("doctor")
         wd = cleaned.get("work_date")
         shift = cleaned.get("shift")
+        if wd is not None and shift and not is_schedule_shift_available(wd, shift):
+            raise forms.ValidationError(expired_schedule_message())
         if dept and not doc:
             self.add_error("doctor", "请选择出诊医生。")
         if dept and doc:

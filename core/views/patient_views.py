@@ -42,6 +42,11 @@ from core.models import (
     User,
     UserRole,
 )
+from core.schedule_utils import (
+    available_shift_values_for_date,
+    expired_schedule_message,
+    is_schedule_shift_available,
+)
 from core.utils import record_operation_log
 from core.services.deepseek_service import DeepSeekService, DeepSeekServiceError
 
@@ -105,15 +110,22 @@ class PatientDoctorListView(ListView):
 
     def get_queryset(self):
         today = timezone.localdate()
+        today_available_shifts = available_shift_values_for_date(today)
         qs = (
             User.objects.filter(role=UserRole.DOCTOR, is_active=True)
             .select_related("department")
             .annotate(
                 min_booking_price=Min(
                     "doctor_schedules__price",
-                    filter=Q(
-                        doctor_schedules__work_date__gte=today,
-                        doctor_schedules__is_active=True,
+                    filter=(
+                        Q(doctor_schedules__is_active=True)
+                        & (
+                            Q(doctor_schedules__work_date__gt=today)
+                            | Q(
+                                doctor_schedules__work_date=today,
+                                doctor_schedules__shift__in=today_available_shifts,
+                            )
+                        )
                     ),
                 )
             )
@@ -169,7 +181,7 @@ def _patient_doctor_booking_grid_context(doctor: User) -> dict:
             }
         )
 
-    schedules = list(
+    schedule_queryset = (
         Schedule.objects.filter(
             doctor=doctor,
             is_active=True,
@@ -185,6 +197,11 @@ def _patient_doctor_booking_grid_context(doctor: User) -> dict:
         )
         .order_by("work_date", "shift", "department__name")
     )
+    schedules = [
+        s
+        for s in schedule_queryset
+        if is_schedule_shift_available(s.work_date, s.shift)
+    ]
     for s in schedules:
         s.remaining_slots = max(0, int(s.total_capacity) - int(s.booked))
 
@@ -276,11 +293,16 @@ class ScheduleListView(ListView):
             is_active=True,
         )
         today = timezone.localdate()
+        today_available_shifts = available_shift_values_for_date(today)
         return (
             Schedule.objects.filter(
                 department=self.department,
                 is_active=True,
                 work_date__gte=today,
+            )
+            .filter(
+                Q(work_date__gt=today)
+                | Q(work_date=today, shift__in=today_available_shifts)
             )
             .select_related("doctor", "doctor__department", "department")
             .annotate(
@@ -317,7 +339,6 @@ class AppointmentBookView(FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def _booking_state(self):
-        today = timezone.localdate()
         booked = _schedule_effective_booked_count(self.schedule.pk)
         remaining = max(0, self.schedule.total_capacity - booked)
         duplicate_doctor_same_day = _patient_has_booking_same_doctor_work_date(
@@ -331,9 +352,13 @@ class AppointmentBookView(FormView):
             Decimal("0.01")
         )
         balance_sufficient = balance >= price
+        shift_available = is_schedule_shift_available(
+            self.schedule.work_date,
+            self.schedule.shift,
+        )
         can = (
             self.schedule.is_active
-            and self.schedule.work_date >= today
+            and shift_available
             and remaining > 0
             and not duplicate_doctor_same_day
             and balance_sufficient
@@ -344,6 +369,7 @@ class AppointmentBookView(FormView):
             "duplicate_doctor_same_day": duplicate_doctor_same_day,
             "schedule_price": price,
             "balance_sufficient": balance_sufficient,
+            "shift_available": shift_available,
             "can_book": can,
         }
 
@@ -361,12 +387,11 @@ class AppointmentBookView(FormView):
     def post(self, request, *args, **kwargs):
         st = self._booking_state()
         if not st["can_book"]:
-            today = timezone.localdate()
             if (
                 not self.schedule.is_active
-                or self.schedule.work_date < today
+                or not st["shift_available"]
             ):
-                messages.error(request, "该班次已不可预约。")
+                messages.error(request, expired_schedule_message())
             elif st["remaining_slots"] <= 0:
                 messages.error(request, "该排班号源已满。")
             elif st["duplicate_doctor_same_day"]:
@@ -404,9 +429,11 @@ class AppointmentBookView(FormView):
                     .order_by("pk")
                 )
                 schedule = Schedule.objects.select_for_update().get(pk=self.schedule.pk)
-                today = timezone.localdate()
-                if not schedule.is_active or schedule.work_date < today:
-                    raise ValueError("该班次已不可预约。")
+                if not schedule.is_active or not is_schedule_shift_available(
+                    schedule.work_date,
+                    schedule.shift,
+                ):
+                    raise ValueError(expired_schedule_message())
                 used = _schedule_effective_booked_count(schedule.pk)
                 if used >= schedule.total_capacity:
                     raise ValueError("该排班号源已满。")
